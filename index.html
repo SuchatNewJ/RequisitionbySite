@@ -1301,12 +1301,10 @@ async function apiFetch(action, params = {}) {
 }
 
 async function apiPost(payload) {
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(payload),
-    redirect: "follow"
-  });
+  // ส่งผ่าน GET เพราะ Apps Script doPost มีปัญหา CORS
+  const data = encodeURIComponent(JSON.stringify(payload.data));
+  const url  = APPS_SCRIPT_URL + "?action=saveTransaction&data=" + data;
+  const res  = await fetch(url, { redirect: "follow" });
   return res.json();
 }
 
@@ -3072,10 +3070,10 @@ function bindEvents() {
 // ใช้ setTimeout แทน window.onload เพราะ print functions override window.onload
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", function() {
-    setTimeout(function() { bindEvents(); init(); }, 500);
+    setTimeout(function() { bindEvents(); init(); }, 50);
   });
 } else {
-  setTimeout(function() { bindEvents(); init(); }, 500);
+  setTimeout(function() { bindEvents(); init(); }, 50);
 }
 </script>
 </body>

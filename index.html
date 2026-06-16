@@ -1,0 +1,3082 @@
+<!DOCTYPE html>
+<html lang="th" style="height:100%">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ENZONE — ระบบเบิก-คืนอุปกรณ์</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+
+/* ===== FULL SCREEN FIX ===== */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden;
+}
+.app-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+/* ===== RESET & BASE ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f2744;--blue:#185FA5;--blue-lt:#e6f1fb;
+  --green:#0F6E56;--green-lt:#e1f5ee;
+  --red:#A32D2D;--red-lt:#fcebeb;
+  --amber:#854F0B;--amber-lt:#faeeda;
+  --gray:#f5f5f3;--border:#e0ddd6;--border2:#b8b5ac;
+  --text:#1a1a18;--text2:#4a4a46;--text3:#888884;
+  --radius:12px;--radius-sm:8px;--shadow:0 2px 10px rgba(0,0,0,.1)
+}
+body{font-family:'Sarabun',system-ui,sans-serif;background:#eceae5;color:var(--text);font-size:16px;line-height:1.65;min-height:100vh;min-height:-webkit-fill-available}
+
+/* ===== LAYOUT ===== */
+.app-shell{display:grid;grid-template-rows:auto 1fr;min-height:100vh;min-height:-webkit-fill-available}
+header{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:22px;height:22px;fill:var(--navy)}
+.logo-text{font-size:18px;font-weight:700;letter-spacing:.3px}
+.logo-sub{font-size:12px;opacity:.6;margin-top:-2px}
+.status-dot{width:9px;height:9px;border-radius:50%;background:#4caf50;display:inline-block;margin-right:5px;flex-shrink:0}
+.status-dot.loading{background:#ffc107}
+.status-dot.error{background:#f44336}
+#conn-status{font-size:12px;opacity:.85;display:flex;align-items:center;gap:4px}
+main{padding:14px;max-width:900px;margin:0 auto;width:100%}
+
+/* ===== TABS ===== */
+.tab-bar{display:flex;gap:3px;background:#fff;border-radius:var(--radius);padding:5px;margin-bottom:14px;border:0.5px solid var(--border);box-shadow:var(--shadow)}
+.tab-btn{flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-family:inherit;color:var(--text2);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.15s;font-weight:500;-webkit-tap-highlight-color:transparent}
+.tab-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.tab-btn span{font-size:11px;line-height:1}
+.tab-btn.active{background:var(--navy);color:#fff;font-weight:700;box-shadow:0 2px 6px rgba(15,39,68,.3)}
+.panel{display:none}.panel.active{display:block}
+
+/* ===== CARDS ===== */
+.card{background:#fff;border:0.5px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card-title svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;opacity:.55}
+
+/* ===== FORM ===== */
+.form-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.fg{flex:1;min-width:150px}
+.fg label{font-size:13px;color:var(--text2);display:block;margin-bottom:5px;font-weight:600}
+input[type=text],input[type=number],select,textarea{
+  width:100%;border:1.5px solid var(--border2);border-radius:var(--radius-sm);
+  padding:11px 13px;font-size:16px;font-family:inherit;background:#fff;color:var(--text);
+  transition:.15s;outline:none;-webkit-appearance:none;min-height:46px}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.15)}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+
+/* ===== SEARCH ===== */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--text3);fill:none;stroke-width:2;pointer-events:none}
+.has-icon input{padding-left:42px}
+.dropdown{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--border2);border-radius:var(--radius);z-index:200;max-height:340px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.dd-item{padding:13px 14px;cursor:pointer;border-bottom:0.5px solid var(--border);display:flex;gap:12px;align-items:center}
+.dd-item:last-child{border-bottom:none}
+.dd-item:active,.dd-item:hover{background:var(--blue-lt)}
+.dd-thumb{width:46px;height:46px;object-fit:contain;border-radius:7px;border:0.5px solid var(--border);flex-shrink:0}
+.dd-thumb-ph{width:46px;height:46px;background:var(--gray);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dd-thumb-ph svg{width:22px;height:22px;stroke:var(--text3);fill:none;stroke-width:1.5}
+.dd-name{font-size:15px;font-weight:600;line-height:1.35}
+.dd-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.dd-qty{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--blue-lt);color:var(--blue);font-weight:700;flex-shrink:0;white-space:nowrap}
+
+/* ===== SELECTED PRODUCT BOX ===== */
+.sel-box{background:#f4f7ff;border:1.5px solid #ccdaf7;border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start}
+.sel-thumb{width:62px;height:62px;object-fit:contain;border-radius:8px;border:0.5px solid var(--border);flex-shrink:0}
+.sel-thumb-ph{width:62px;height:62px;background:#fff;border-radius:8px;border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sel-thumb-ph svg{width:28px;height:28px;stroke:var(--text3);fill:none;stroke-width:1.5}
+.sel-name{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:3px}
+.sel-meta{font-size:13px;color:var(--text2);margin-bottom:10px}
+.qty-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qty-row input[type=number]{width:100px;font-size:20px;font-weight:700;text-align:center;padding:10px 8px}
+.qty-row select{min-width:115px}
+.qty-row input[type=text]{flex:1;min-width:120px}
+.conv-hint{font-size:12px;color:var(--text3);margin-top:6px}
+
+/* ===== CART ===== */
+.cart-item{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:0.5px solid var(--border)}
+.cart-item:last-child{border-bottom:none}
+.cart-thumb{width:42px;height:42px;object-fit:contain;border-radius:6px;border:0.5px solid var(--border);flex-shrink:0}
+.cart-thumb-ph{width:42px;height:42px;background:var(--gray);border-radius:6px;flex-shrink:0}
+.cart-name{flex:1;font-size:15px;font-weight:600;line-height:1.3}
+.cart-note{font-size:12px;color:var(--text3);margin-top:2px}
+.cart-qty{font-size:16px;font-weight:700;min-width:80px;text-align:right;white-space:nowrap}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:15px}
+.empty-state svg{width:44px;height:44px;stroke:var(--border2);fill:none;stroke-width:1.5;margin-bottom:12px;display:block;margin-inline:auto}
+
+/* ===== BUTTONS ===== */
+.btn{padding:12px 20px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);background:#fff;color:var(--text);cursor:pointer;font-size:15px;font-family:inherit;display:inline-flex;align-items:center;gap:7px;transition:.15s;font-weight:600;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.82;transform:scale(.97)}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-sm{padding:8px 14px;font-size:14px}
+.btn-icon{padding:9px;border:none;background:none;cursor:pointer;color:var(--text3);border-radius:7px;-webkit-tap-highlight-color:transparent;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center}
+.btn-icon:active{background:var(--red-lt);color:var(--red)}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.btn-row{display:flex;justify-content:stretch;gap:10px;margin-top:14px}
+.btn-row .btn{flex:1;justify-content:center;padding:15px;font-size:16px;font-weight:700}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-issue{background:var(--red-lt);color:var(--red)}
+.badge-return{background:var(--green-lt);color:var(--green)}
+.badge-receive{background:#e3f0fd;color:#1565C0}
+.badge-sale{background:#fff3e0;color:#E65100}
+
+/* ===== HISTORY ===== */
+.hist-card{background:#fff;border:0.5px solid var(--border);border-radius:var(--radius);padding:15px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.hist-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px}
+.hist-job{font-size:15px;font-weight:700;line-height:1.35}
+.hist-meta{font-size:12px;color:var(--text2);text-align:right;flex-shrink:0;line-height:1.7}
+.hist-items{display:flex;flex-wrap:wrap;gap:6px}
+.hist-item-pill{background:var(--gray);padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600}
+
+/* ===== SUMMARY ===== */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:0.5px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.stat-val{font-size:28px;font-weight:700;line-height:1.1}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:380px}
+th{text-align:left;padding:11px 12px;border-bottom:2px solid var(--border2);font-weight:700;color:var(--text2);font-size:12px;background:var(--gray);white-space:nowrap}
+td{padding:12px;border-bottom:0.5px solid var(--border);font-size:14px}
+tr:last-child td{border-bottom:none}
+tr:active td{background:var(--gray)}
+
+/* ===== SETUP BANNER ===== */
+.setup-banner{background:var(--amber-lt);border:0.5px solid #e9b96e;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;font-size:14px}
+.setup-banner strong{color:var(--amber)}
+.setup-banner code{background:rgba(0,0,0,.07);padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace}
+
+/* ===== LOADING ===== */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{text-align:center;padding:48px;color:var(--text2);font-size:15px}
+
+/* ===== TOAST ===== */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:#1a1a18;color:#fff;padding:12px 22px;border-radius:40px;font-size:14px;font-weight:500;transition:.3s;opacity:0;pointer-events:none;z-index:9999;max-width:90vw;text-align:center;line-height:1.4}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== LOGIN SCREEN ===== */
+#login-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:linear-gradient(140deg,#0a1e3d 0%,#1a4070 100%);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:40px 20px 20px;overflow-y:auto}
+.login-box{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center}
+.login-logo{width:64px;height:64px;background:var(--navy);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.login-logo svg{width:36px;height:36px;fill:#fff}
+.login-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:14px;color:var(--text2);margin-bottom:28px}
+.login-box label{text-align:left;font-size:14px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.login-box input,.login-box select{margin-bottom:14px;font-size:16px;padding:13px 14px}
+.btn-login{width:100%;padding:15px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);font-size:17px;font-family:inherit;font-weight:700;cursor:pointer;margin-top:6px;transition:.15s}
+.btn-login:active{background:#0f3060;transform:scale(.98)}
+.login-err{color:var(--red);font-size:14px;margin-top:10px;min-height:22px;font-weight:600}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:48px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:8px;margin-bottom:0}
+.pw-toggle svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ===== HEADER USER ===== */
+.user-badge{display:flex;align-items:center;gap:8px}
+.user-name{font-size:14px;opacity:.95;font-weight:600}
+.btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 13px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-logout:active{background:rgba(255,255,255,.28)}
+
+/* ===== DATE PICKER ===== */
+.flatpickr-input{cursor:pointer !important;background:#fff !important;font-size:16px !important;min-height:46px !important}
+.flatpickr-input:hover{border-color:var(--blue) !important}
+.flatpickr-calendar{font-family:'Sarabun',system-ui,sans-serif !important;border-radius:var(--radius) !important;box-shadow:0 8px 28px rgba(0,0,0,.15) !important;font-size:15px !important;border:1.5px solid var(--border2) !important}
+.flatpickr-day.selected,.flatpickr-day.selected:hover{background:var(--navy) !important;border-color:var(--navy) !important}
+.flatpickr-day:hover{background:var(--blue-lt) !important}
+.flatpickr-months{background:var(--navy) !important;border-radius:var(--radius) var(--radius) 0 0 !important;padding:6px !important}
+.flatpickr-month,.flatpickr-current-month,.flatpickr-monthDropdown-months,.numInput,.arrowUp,.arrowDown,.flatpickr-prev-month,.flatpickr-next-month{color:#fff !important;fill:#fff !important}
+.flatpickr-weekday{font-weight:700 !important;font-size:13px !important}
+.flatpickr-day{font-size:14px !important;height:40px !important;line-height:40px !important;border-radius:8px !important}
+.flatpickr-day.today{border-color:var(--blue) !important;font-weight:700 !important}
+
+/* ===== RESPONSIVE MOBILE ===== */
+@media(max-width:600px){
+  main{padding:10px}
+  header{padding:11px 13px}
+  .logo-text{font-size:16px}
+  .logo-sub{display:none}
+
+  .tab-btn{padding:9px 3px;gap:3px}
+  .tab-btn svg{width:22px;height:22px}
+  .tab-btn span{font-size:10px}
+
+  .form-row{flex-direction:column;gap:8px}
+  .fg{min-width:100%}
+
+  .card{padding:14px}
+
+  .qty-row{flex-direction:column;align-items:stretch;gap:8px}
+  .qty-row input[type=number]{width:100%;text-align:left;font-size:22px;padding:12px 14px}
+  .qty-row select{width:100%;min-width:0}
+  .qty-row input[type=text]{width:100%}
+  .qty-row .btn{width:100%;justify-content:center;padding:14px;font-size:16px}
+
+  .btn-row .btn{padding:15px;font-size:16px}
+
+  .dd-item{padding:14px 12px}
+  .dd-name{font-size:15px}
+  .dd-thumb{width:46px;height:46px}
+
+  .hist-header{flex-direction:column;gap:4px}
+  .hist-meta{text-align:left}
+  .hist-item-pill{font-size:12px}
+
+  .stat-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-val{font-size:26px}
+  .stat-label{font-size:11px}
+
+  .sel-thumb,.sel-thumb-ph{width:52px;height:52px}
+
+  #toast{max-width:88vw;font-size:13px;padding:11px 16px;bottom:16px}
+
+  .login-box{padding:28px 20px;border-radius:16px;max-width:100%;margin-top:0}
+  .login-title{font-size:20px}
+  .login-logo{width:52px;height:52px;margin-bottom:12px}
+  .login-logo svg{width:28px;height:28px}
+  .login-sub{margin-bottom:20px}
+  .btn-login{padding:15px;font-size:16px}
+  #login-screen{padding:24px 16px 16px;align-items:flex-start}
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+</head>
+<body style="height:100%">
+<script>
+// ===== IFRAME FULL SCREEN FIX FOR GOOGLE APPS SCRIPT =====
+(function(){
+  // Tell parent Apps Script iframe to expand
+  function resizeFrame() {
+    try {
+      // google.script.host resize
+      if (typeof google !== 'undefined' && google.script && google.script.host) {
+        google.script.host.setHeight(window.innerHeight || document.documentElement.clientHeight || 800);
+        google.script.host.setWidth(window.innerWidth  || document.documentElement.clientWidth  || 400);
+      }
+    } catch(e) {}
+  }
+  // Run on load and resize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resizeFrame);
+  } else {
+    resizeFrame();
+  }
+  window.addEventListener('resize', resizeFrame);
+})();
+</script>
+
+<div id="setup-banner" class="setup-banner" style="margin:12px;display:none">
+  ⚙️ <strong>ยังไม่ได้ตั้งค่า Apps Script URL</strong> — 
+  เปิดไฟล์นี้ด้วย Text Editor แล้วแก้ <code>APPS_SCRIPT_URL</code> บรรทัดแรก 
+  แล้ว Save และเปิดไฟล์ใหม่
+</div>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <div class="login-title">ENZONE SERVICE</div>
+    <div class="login-sub">ระบบเบิก-คืนอุปกรณ์</div>
+
+    <label>เลือกชื่อผู้ใช้งาน</label>
+    <select id="login-user">
+      <option value="">— เลือกชื่อ —</option>
+      <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+      <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+      <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+      <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+    </select>
+
+    <label>รหัสผ่าน</label>
+    <div class="pw-wrap">
+      <input type="password" id="login-pw" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')(window.doLogin||function(){})()">
+      <button class="pw-toggle" id="pw-toggle-btn" tabindex="-1" type="button">
+        <svg id="pw-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+
+    <button class="btn-login" id="login-btn" onclick="(window.doLogin||function(){})()">เข้าสู่ระบบ</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">ENZONE SERVICE</div>
+        <div class="logo-sub">ระบบเบิก-คืนอุปกรณ์</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div class="user-badge">
+        <span class="user-name" id="header-username">—</span>
+        <button class="btn-logout" id="logout-btn">ออก</button>
+      </div>
+      <div id="conn-status">
+        <span class="status-dot" id="dot"></span>
+        <span id="conn-text">กำลังโหลด...</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('issue')" id="tab-issue-btn">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <span>เบิกของ</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('return')" id="tab-return-btn">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>คืนของ</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('receive')" id="tab-receive-btn">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12l10 10 10-10"/></svg>
+        <span>รับเข้า</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('sale')" id="tab-sale-btn">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        <span>ขายออก</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('history')" id="tab-history-btn">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span>ประวัติ</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('stock')" id="tab-stock-btn">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>คลัง</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('scrap')" id="tab-scrap-btn">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+        <span>เศษ</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('summary')" id="tab-summary-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span>สรุป</span>
+      </button>
+    </div>
+
+    <!-- ===== ISSUE PANEL ===== -->
+    <div class="panel active" id="panel-issue">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+          ข้อมูล Job
+        </div>
+        <div class="form-row">
+          <div class="fg" style="flex:2">
+            <label>Job / Site <span style="color:var(--red)">*</span></label>
+            <div style="display:flex;gap:6px">
+              <select id="issue-job" onchange="onJobChange('issue')" style="flex:1">
+                <option value="">— เลือก Job —</option>
+              </select>
+              <button type="button" class="btn btn-sm" onclick="openAddJob('issue')" title="เพิ่ม Job ใหม่"
+                style="flex-shrink:0;padding:0 12px;background:#185FA5;color:#fff;border-color:#185FA5;font-size:20px;line-height:1">+</button>
+            </div>
+          </div>
+          <div class="fg">
+            <label>ผู้รับผิดชอบ</label>
+            <select id="issue-incharge">
+              <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+              <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+              <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+              <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>วันที่</label>
+            <input type="text" id="issue-date" class="flatpickr-input" placeholder="เลือกวันที่" readonly>
+          </div>
+        </div>
+        <div class="fg">
+          <label>หมายเหตุ</label>
+          <input type="text" id="issue-remark" placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 12h.01"/></svg>
+            รายการอุปกรณ์
+          </span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="issue-cart-count" style="font-size:12px;color:var(--text2);font-weight:400">0 รายการ</span>
+            <button type="button" class="btn btn-sm" onclick="openAddProduct('issue')" title="เพิ่มสินค้าใหม่เข้าระบบ"
+              style="background:#0F6E56;color:#fff;border-color:#0F6E56;padding:5px 10px;font-size:12px;gap:4px">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              สินค้าใหม่
+            </button>
+          </div>
+        </div>
+
+        <div class="search-wrap has-icon">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="issue-search" placeholder="ค้นหาสินค้า — พิมพ์ชื่อ / ยี่ห้อ / ขนาด / หมวดหมู่" oninput="onSearch('issue')" autocomplete="off">
+          <div class="dropdown" id="issue-dropdown" style="display:none"></div>
+        </div>
+
+        <div id="issue-sel-box" style="display:none"></div>
+        <div id="issue-cart">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            ยังไม่มีรายการ — ค้นหาและเพิ่มอุปกรณ์
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="printTransaction('issue')" style="background:#555;color:#fff;border-color:#555;flex:0;padding:15px 18px" title="พิมพ์ PDF ก่อนยืนยัน">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+        <button class="btn btn-primary" id="issue-submit-btn" onclick="submitTransaction('issue')">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+          ยืนยันการเบิก
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== RETURN PANEL ===== -->
+    <div class="panel" id="panel-return">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+          ข้อมูล Job
+        </div>
+        <div class="form-row">
+          <div class="fg" style="flex:2">
+            <label>Job / Site <span style="color:var(--red)">*</span></label>
+            <div style="display:flex;gap:6px">
+              <select id="return-job" onchange="onJobChange('return')" style="flex:1">
+                <option value="">— เลือก Job —</option>
+              </select>
+              <button type="button" class="btn btn-sm" onclick="openAddJob('return')" title="เพิ่ม Job ใหม่"
+                style="flex-shrink:0;padding:0 12px;background:#185FA5;color:#fff;border-color:#185FA5;font-size:20px;line-height:1">+</button>
+            </div>
+          </div>
+          <div class="fg">
+            <label>ผู้คืนของ</label>
+            <select id="return-incharge">
+              <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+              <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+              <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+              <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>วันที่</label>
+            <input type="text" id="return-date" class="flatpickr-input" placeholder="เลือกวันที่" readonly>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 12h.01"/></svg>
+            รายการที่คืน
+          </span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="return-cart-count" style="font-size:12px;color:var(--text2);font-weight:400">0 รายการ</span>
+            <button type="button" class="btn btn-sm" onclick="openAddProduct('return')" title="เพิ่มสินค้าใหม่เข้าระบบ"
+              style="background:#0F6E56;color:#fff;border-color:#0F6E56;padding:5px 10px;font-size:12px;gap:4px">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              สินค้าใหม่
+            </button>
+          </div>
+        </div>
+
+        <div class="search-wrap has-icon">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="return-search" placeholder="ค้นหาสินค้าที่ต้องการคืน" oninput="onSearch('return')" autocomplete="off">
+          <div class="dropdown" id="return-dropdown" style="display:none"></div>
+        </div>
+
+        <div id="return-sel-box" style="display:none"></div>
+        <div id="return-cart">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            ยังไม่มีรายการ — ค้นหาและเพิ่มสินค้าที่คืน
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="printTransaction('return')" style="background:#555;color:#fff;border-color:#555;flex:0;padding:15px 18px" title="พิมพ์ PDF ก่อนยืนยัน">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+        <button class="btn btn-success" id="return-submit-btn" onclick="submitTransaction('return')">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+          ยืนยันการคืน
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== RECEIVE PANEL (รับสินค้าเข้าบริษัท) ===== -->
+    <div class="panel" id="panel-receive">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M12 2v20M2 12l10 10 10-10"/></svg>
+          ข้อมูลการรับสินค้าเข้า
+        </div>
+        <div class="form-row">
+          <div class="fg" style="flex:2">
+            <label>แหล่งที่มา / ซัพพลายเออร์</label>
+            <input type="text" id="receive-supplier" placeholder="เช่น บริษัท ABC จำกัด / ซื้อเอง">
+          </div>
+          <div class="fg">
+            <label>ผู้รับสินค้า</label>
+            <select id="receive-incharge">
+              <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+              <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+              <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+              <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>วันที่</label>
+            <input type="text" id="receive-date" class="flatpickr-input" placeholder="เลือกวันที่" readonly>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <div class="fg">
+            <label>เลข PO / ใบสั่งซื้อ (ถ้ามี)</label>
+            <input type="text" id="receive-po" placeholder="เช่น PO-2025-001">
+          </div>
+          <div class="fg">
+            <label>หมายเหตุ</label>
+            <input type="text" id="receive-remark" placeholder="รายละเอียดเพิ่มเติม">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 12h.01"/></svg>
+            รายการสินค้าที่รับเข้า
+          </span>
+          <span id="receive-cart-count" style="font-size:12px;color:var(--text2);font-weight:400">0 รายการ</span>
+          <button type="button" class="btn btn-sm" onclick="openAddProduct('receive')" title="เพิ่มสินค้าใหม่เข้าระบบ"
+            style="background:#0F6E56;color:#fff;border-color:#0F6E56;padding:5px 10px;font-size:12px;gap:4px">
+            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            สินค้าใหม่
+          </button>
+        </div>
+        <div class="search-wrap has-icon">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="receive-search" placeholder="ค้นหาสินค้า — พิมพ์ชื่อ / ยี่ห้อ / ขนาด" oninput="onSearch('receive')" autocomplete="off">
+          <div class="dropdown" id="receive-dropdown" style="display:none"></div>
+        </div>
+        <div id="receive-sel-box" style="display:none"></div>
+        <div id="receive-cart">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            ยังไม่มีรายการ — ค้นหาและเพิ่มสินค้าที่รับเข้า
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="printTransaction('receive')" style="background:#555;color:#fff;border-color:#555;flex:0;padding:15px 18px" title="พิมพ์ PDF ก่อนยืนยัน">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+        <button class="btn" id="receive-submit-btn" onclick="submitSimple('receive')"
+          style="background:#1565C0;color:#fff;border-color:#1565C0">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+          ยืนยันการรับสินค้าเข้า
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== SALE PANEL (ขายออกจากบริษัท) ===== -->
+    <div class="panel" id="panel-sale">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+          ข้อมูลการขายออก
+        </div>
+        <div class="form-row">
+          <div class="fg" style="flex:2">
+            <label>ชื่อลูกค้า <span style="color:var(--red)">*</span></label>
+            <input type="text" id="sale-customer" placeholder="เช่น คุณสมชาย / บริษัท XYZ">
+          </div>
+          <div class="fg">
+            <label>เบอร์โทร</label>
+            <input type="text" id="sale-phone" placeholder="ไม่บังคับ">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>ผู้ขาย</label>
+            <select id="sale-incharge">
+              <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+              <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+              <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+              <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>วันที่</label>
+            <input type="text" id="sale-date" class="flatpickr-input" placeholder="เลือกวันที่" readonly>
+          </div>
+          <div class="fg">
+            <label>หมายเหตุ</label>
+            <input type="text" id="sale-remark" placeholder="ไม่บังคับ">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 12h.01"/></svg>
+            รายการสินค้าที่ขาย
+          </span>
+          <span id="sale-cart-count" style="font-size:12px;color:var(--text2);font-weight:400">0 รายการ</span>
+          <button type="button" class="btn btn-sm" onclick="openAddProduct('sale')" title="เพิ่มสินค้าใหม่เข้าระบบ"
+            style="background:#0F6E56;color:#fff;border-color:#0F6E56;padding:5px 10px;font-size:12px;gap:4px">
+            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            สินค้าใหม่
+          </button>
+        </div>
+        <div class="search-wrap has-icon">
+          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="sale-search" placeholder="ค้นหาสินค้าที่ต้องการขาย" oninput="onSearch('sale')" autocomplete="off">
+          <div class="dropdown" id="sale-dropdown" style="display:none"></div>
+        </div>
+        <div id="sale-sel-box" style="display:none"></div>
+        <div id="sale-cart">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            ยังไม่มีรายการ — ค้นหาและเพิ่มสินค้าที่ขาย
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="printTransaction('sale')" style="background:#555;color:#fff;border-color:#555;flex:0;padding:15px 18px" title="พิมพ์ PDF ก่อนยืนยัน">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          PDF
+        </button>
+        <button class="btn" id="sale-submit-btn" onclick="submitSimple('sale')"
+          style="background:#E65100;color:#fff;border-color:#E65100">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+          ยืนยันการขาย
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== HISTORY PANEL ===== -->
+    <div class="panel" id="panel-history">
+      <div class="card" style="padding:12px">
+        <div class="form-row" style="margin:0">
+          <div class="fg">
+            <label>กรอง Job</label>
+            <select id="hist-job" onchange="loadHistory()">
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>ประเภท</label>
+            <select id="hist-type" onchange="loadHistory()">
+              <option value="">ทั้งหมด</option>
+              <option value="issue">เบิก</option>
+              <option value="return">คืน</option>
+              <option value="receive">รับเข้า</option>
+              <option value="sale">ขายออก</option>
+            </select>
+          </div>
+          <div class="fg" style="flex:0;align-self:flex-end">
+            <button class="btn btn-sm" onclick="loadHistory()">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              รีเฟรช
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="hist-container">
+        <div class="empty-state" style="padding:40px">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+          กดปุ่ม "รีเฟรช" เพื่อโหลดประวัติ
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SUMMARY PANEL ===== -->
+    <!-- ===== STOCK PANEL ===== -->
+    <div class="panel" id="panel-stock">
+
+      <!-- Filter & Search bar -->
+      <div class="card" style="padding:12px 14px">
+        <div class="form-row" style="margin-bottom:0;gap:8px">
+          <div class="fg" style="flex:2">
+            <div class="search-wrap has-icon" style="margin-bottom:0">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="stock-search" placeholder="ค้นหาสินค้า..." oninput="renderStock()">
+            </div>
+          </div>
+          <div class="fg">
+            <select id="stock-cat" onchange="renderStock()">
+              <option value="">ทุกหมวดหมู่</option>
+            </select>
+          </div>
+          <div class="fg">
+            <select id="stock-filter" onchange="renderStock()">
+              <option value="all">แสดงทั้งหมด</option>
+              <option value="low">ใกล้หมด (≤5)</option>
+              <option value="out">หมดสต็อก (=0)</option>
+              <option value="ok">ปกติ (>5)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert: สินค้าที่ควรสั่งเพิ่ม -->
+      <div id="stock-alert-box"></div>
+
+      <!-- Stock table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:0.5px solid var(--border)">
+          <span class="card-title" style="margin-bottom:0">
+            <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            สต็อกสินค้าปัจจุบัน
+            <span id="stock-last-update" style="font-size:11px;font-weight:400;color:var(--text3);margin-left:6px"></span>
+          </span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockFromSheet()" title="อัปเดตยอดล่าสุดจาก Google Sheet"
+              style="background:#0f2744;color:#fff;border-color:#0f2744;gap:5px">
+              <svg id="refresh-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              รีเฟรช
+            </button>
+            <button class="btn btn-sm" onclick="printStockReport()" style="background:#555;color:#fff;border-color:#555">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> PDF
+            </button>
+            <button class="btn btn-sm" onclick="exportExcel()" style="background:#1D6F42;color:#fff;border-color:#1D6F42">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Excel
+            </button>
+            <button class="btn btn-sm" onclick="exportCSV()" style="background:#185FA5;color:#fff;border-color:#185FA5">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="stock-table">
+            <thead>
+              <tr>
+                <th style="min-width:200px">สินค้า</th>
+                <th>หมวดหมู่</th>
+                <th style="text-align:right">คงเหลือ</th>
+                <th style="text-align:center">สถานะ</th>
+                <th style="text-align:center">สั่งเพิ่ม?</th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody"></tbody>
+          </table>
+        </div>
+        <div id="stock-empty" style="display:none" class="empty-state">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          ไม่พบรายการ
+        </div>
+      </div>
+
+      <!-- สรุปรายการสั่งเพิ่ม -->
+      <div id="order-summary-box" style="display:none">
+        <div class="card" style="border:2px solid #E65100">
+          <div class="card-title" style="color:#E65100">
+            <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><line x1="16" y1="10" x2="8" y2="10"/></svg>
+            รายการที่ควรสั่งเพิ่ม
+          </div>
+          <div id="order-list"></div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn btn-sm" onclick="exportOrderExcel()" style="background:#E65100;color:#fff;border-color:#E65100">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+              Export รายการสั่งซื้อ (Excel)
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== SCRAP PANEL ===== -->
+    <div class="panel" id="panel-scrap">
+
+      <div class="card" style="padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:15px;font-weight:700">🗂 บันทึกเศษอุปกรณ์</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">สินค้าที่เก็บเป็นเศษที่ Site ไม่สามารถคืนกองกลางได้</div>
+          </div>
+          <button class="btn btn-primary" onclick="openScrapForm()" style="gap:6px">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            บันทึกเศษใหม่
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:12px 14px;margin-bottom:12px">
+        <div class="form-row" style="margin-bottom:0;gap:8px">
+          <div class="fg" style="flex:2">
+            <div class="search-wrap has-icon" style="margin-bottom:0">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="scrap-search" placeholder="ค้นหาเศษสินค้า..." oninput="renderScrapList()">
+            </div>
+          </div>
+          <div class="fg">
+            <select id="scrap-job-filter" onchange="renderScrapList()">
+              <option value="">ทุก Job/Site</option>
+            </select>
+          </div>
+          <div class="fg">
+            <select id="scrap-condition-filter" onchange="renderScrapList()">
+              <option value="">ทุกสภาพ</option>
+              <option value="ใช้ได้">ใช้ได้</option>
+              <option value="ชำรุด">ชำรุด</option>
+              <option value="ไม่แน่ใจ">ไม่แน่ใจ</option>
+            </select>
+          </div>
+          <div style="flex-shrink:0">
+            <button class="btn btn-sm" onclick="loadScrap()">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              รีเฟรช
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="scrap-list-container">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          กดปุ่ม "รีเฟรช" เพื่อโหลดรายการ หรือกด "บันทึกเศษใหม่"
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== SUMMARY PANEL ===== -->
+    <div class="panel" id="panel-summary">
+      <div id="summary-container"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== MODAL: บันทึกเศษอุปกรณ์ ===== -->
+<div id="modal-add-scrap" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;padding:16px;overflow-y:auto">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;margin:30px auto;box-shadow:0 16px 48px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:700">🗂 บันทึกเศษอุปกรณ์</div>
+      <button onclick="closeModal('add-scrap')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+
+    <!-- ค้นหาสินค้า -->
+    <div class="fg" style="margin-bottom:12px">
+      <label>สินค้า <span style="color:var(--red)">*</span></label>
+      <div class="search-wrap has-icon" style="margin-bottom:0">
+        <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="scrap-prod-search" placeholder="พิมพ์ชื่อสินค้า..." oninput="onScrapProdSearch()" autocomplete="off">
+        <div class="dropdown" id="scrap-prod-dropdown" style="display:none"></div>
+      </div>
+      <div id="scrap-selected-prod" style="display:none;background:var(--gray);border-radius:8px;padding:10px 12px;margin-top:8px;display:none;align-items:center;gap:10px">
+        <img id="scrap-prod-img" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:0.5px solid var(--border)">
+        <div>
+          <div id="scrap-prod-name" style="font-size:14px;font-weight:600"></div>
+          <div id="scrap-prod-cat" style="font-size:12px;color:var(--text2)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ปริมาณ + หน่วย -->
+    <div class="form-row">
+      <div class="fg">
+        <label>ปริมาณโดยประมาณ</label>
+        <input type="text" id="scrap-amount" placeholder="เช่น 0.8, 1.5, ประมาณ 2">
+      </div>
+      <div class="fg">
+        <label>หน่วย</label>
+        <input type="text" id="scrap-unit" placeholder="เช่น เมตร, ท่อน, ชิ้น">
+      </div>
+    </div>
+
+    <!-- Job/Site + ตำแหน่งเก็บ -->
+    <div class="form-row">
+      <div class="fg">
+        <label>Job / Site ที่เก็บ <span style="color:var(--red)">*</span></label>
+        <select id="scrap-job">
+          <option value="">— เลือก Job —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>ตำแหน่งที่เก็บ</label>
+        <input type="text" id="scrap-location" placeholder="เช่น ตู้ไฟ Line3, กล่องเศษ">
+      </div>
+    </div>
+
+    <!-- สภาพ + มูลค่าประมาณ -->
+    <div class="form-row">
+      <div class="fg">
+        <label>สภาพ</label>
+        <select id="scrap-condition">
+          <option value="ใช้ได้">ใช้ได้</option>
+          <option value="ชำรุด">ชำรุด</option>
+          <option value="ไม่แน่ใจ">ไม่แน่ใจ</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>มูลค่าประมาณ (฿)</label>
+        <input type="number" id="scrap-value" value="0" min="0" step="1" placeholder="0">
+      </div>
+    </div>
+
+    <!-- หมายเหตุ -->
+    <div class="fg" style="margin-bottom:12px">
+      <label>หมายเหตุ</label>
+      <input type="text" id="scrap-note" placeholder="รายละเอียดเพิ่มเติม เช่น สีดำ ยาวประมาณ 80 ซม.">
+    </div>
+
+
+    <!-- รูปภาพ: ถ่ายกล้อง / เลือกรูป / URL -->
+    <div class="fg" style="margin-bottom:6px">
+      <label>รูปภาพ (ไม่บังคับ)</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <!-- ถ่ายจากกล้อง — ใช้ JS เปิด input ใหม่ทุกครั้ง -->
+        <button type="button" onclick="openCamera()"
+          style="flex:1;padding:12px 8px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;font-family:inherit;color:var(--text2);font-weight:600">
+          <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          ถ่ายภาพ
+        </button>
+        <!-- เลือกจาก Gallery -->
+        <button type="button" onclick="openGallery()"
+          style="flex:1;padding:12px 8px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;font-family:inherit;color:var(--text2);font-weight:600">
+          <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          เลือกรูป
+        </button>
+        <!-- ใส่ URL -->
+        <button type="button" onclick="toggleScrapUrlInput()"
+          style="flex:1;padding:12px 8px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;font-family:inherit;color:var(--text2);font-weight:600" id="scrap-url-btn">
+          <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          ใส่ URL
+        </button>
+      </div>
+
+      <!-- URL input (ซ่อนไว้ก่อน) -->
+      <div id="scrap-url-section" style="display:none;margin-top:6px">
+        <input type="text" id="scrap-image-url" placeholder="https://..." oninput="previewScrapImage()">
+      </div>
+    </div>
+
+    <!-- Preview รูป -->
+    <div id="scrap-img-preview" style="display:none;margin-bottom:14px;position:relative">
+      <img id="scrap-img-preview-el" style="max-width:100%;max-height:200px;border-radius:10px;border:0.5px solid var(--border);object-fit:contain;display:block">
+      <button type="button" onclick="clearScrapImage()"
+        style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+      <div id="scrap-img-status" style="font-size:11px;color:var(--text3);margin-top:4px;text-align:center"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn" onclick="closeModal('add-scrap')" style="flex:1">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveScrap()" style="flex:2">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+        บันทึกเศษ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ===== MODAL: เพิ่ม JOB ใหม่ ===== -->
+<div id="modal-add-job" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;padding:20px;overflow-y:auto">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;margin:auto;box-shadow:0 16px 48px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:700">➕ เพิ่ม Job / Site ใหม่</div>
+      <button onclick="closeModal('add-job')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:4px">✕</button>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>ชื่อ Job / Site <span style="color:var(--red)">*</span></label>
+      <input type="text" id="new-job-name" placeholder="เช่น บริษัท ABC จำกัด สาขาอุดรธานี">
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>รหัส Job (ไม่บังคับ)</label>
+      <input type="text" id="new-job-id" placeholder="เช่น job_abc หรือปล่อยว่างระบบจะสร้างให้">
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>Site / สถานที่</label>
+      <input type="text" id="new-job-site" placeholder="เช่น อุดรธานี, พิษณุโลก">
+    </div>
+    <div class="fg" style="margin-bottom:18px">
+      <label>ผู้รับผิดชอบ Job</label>
+      <select id="new-job-incharge">
+        <option value="">— ไม่ระบุ —</option>
+        <option value="จักร์กริช สุขบำเพิง">กริช — จักร์กริช สุขบำเพิง</option>
+        <option value="ไชยวัฒน์ สุทธิประเสริฐ">เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ</option>
+        <option value="ณัฐกานต์ หนูนวล">อิง — ณัฐกานต์ หนูนวล</option>
+        <option value="สุชาติ จิรังนิมิตสกุล">นิว — สุชาติ จิรังนิมิตสกุล</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="closeModal('add-job')" style="flex:1">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNewJob()" style="flex:2">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+        บันทึก Job ใหม่
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: เพิ่มสินค้าใหม่ ===== -->
+<div id="modal-add-product" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;padding:20px;overflow-y:auto">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:500px;margin:40px auto;box-shadow:0 16px 48px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:700">➕ เพิ่มสินค้าใหม่เข้าระบบ</div>
+      <button onclick="closeModal('add-product')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:4px">✕</button>
+    </div>
+
+    <div class="form-row">
+      <div class="fg" style="flex:3">
+        <label>ชื่อสินค้า <span style="color:var(--red)">*</span></label>
+        <input type="text" id="np-name" placeholder="เช่น BCC_THW #4 SQ.MM สีเหลือง">
+      </div>
+      <div class="fg">
+        <label>ยี่ห้อ</label>
+        <input type="text" id="np-brand" placeholder="เช่น BCC, ABB">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>หมวดหมู่ <span style="color:var(--red)">*</span></label>
+        <input type="text" id="np-category" placeholder="เช่น สายไฟ, MCB, เทปพัน" list="cat-list">
+        <datalist id="cat-list"></datalist>
+      </div>
+      <div class="fg">
+        <label>ขนาด/รุ่น</label>
+        <input type="text" id="np-size" placeholder="เช่น 1.5, 2.5, C6">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>จำนวนเริ่มต้น</label>
+        <input type="number" id="np-qty" value="0" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label>หน่วยหลัก <span style="color:var(--red)">*</span></label>
+        <input type="text" id="np-unit" placeholder="เช่น ม้วน, กล่อง, ตัว, อัน">
+      </div>
+      <div class="fg">
+        <label>หน่วยย่อย</label>
+        <input type="text" id="np-issue-unit" placeholder="เช่น เมตร, ตัว">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>อัตราแปลงหน่วย</label>
+        <input type="number" id="np-conv" value="1" min="0.001" step="0.001" placeholder="1 หน่วยหลัก = ? หน่วยย่อย">
+      </div>
+      <div class="fg">
+        <label>ราคาทุน/หน่วย (฿)</label>
+        <input type="number" id="np-cost" value="0" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:18px">
+      <label>URL รูปภาพ (ไม่บังคับ)</label>
+      <input type="text" id="np-image" placeholder="https://...">
+    </div>
+
+    <div id="np-preview" style="display:none;background:var(--gray);border-radius:8px;padding:12px;margin-bottom:14px;display:flex;gap:12px;align-items:center">
+      <img id="np-preview-img" style="width:50px;height:50px;object-fit:contain;border-radius:6px;border:0.5px solid var(--border)">
+      <div id="np-preview-name" style="font-size:13px;font-weight:600"></div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="closeModal('add-product')" style="flex:1">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveNewProduct()" style="flex:2;background:#0F6E56;border-color:#0F6E56">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
+        บันทึกสินค้าใหม่
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  ⚠️  ตั้งค่า URL ของ Apps Script ที่ Deploy แล้วตรงนี้
+// ============================================================
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjbuxE0QjpL8YtVZL5bmwpdG25DiWtC4Y8bCLNAy8qHskoF9vRSlS8oaAD5VIEDeZw0Q/exec";
+// ============================================================
+
+const PASSWORD = "AdminEnzone";
+const STAFF = [
+  { value: "จักร์กริช สุขบำเพิง",  label: "กริช — จักร์กริช สุขบำเพิง" },
+  { value: "ไชยวัฒน์ สุทธิประเสริฐ",    label: "เติ้ล — ไชยวัฒน์ สุทธิประเสริฐ" },
+  { value: "ณัฐกานต์ หนูนวล",      label: "อิง — ณัฐกานต์ หนูนวล" },
+  { value: "สุชาติ จิรังนิมิตสกุล", label: "นิว — สุชาติ จิรังนิมิตสกุล" },
+];
+let currentUser = "";
+
+// ===== LOGIN =====
+function doLogin() {
+  try {
+    var userEl = document.getElementById("login-user");
+    var pwEl   = document.getElementById("login-pw");
+    var errEl  = document.getElementById("login-err");
+    var user   = userEl ? userEl.value : "";
+    var pw     = pwEl   ? pwEl.value   : "";
+
+    if (!user) {
+      if (errEl) errEl.textContent = "กรุณาเลือกชื่อผู้ใช้งาน";
+      return;
+    }
+    if (pw !== PASSWORD) {
+      if (errEl) errEl.textContent = "รหัสผ่านไม่ถูกต้อง";
+      if (pwEl)  pwEl.value = "";
+      return;
+    }
+
+    currentUser = user;
+    if (errEl) errEl.textContent = "";
+
+    // ซ่อน login screen
+    var ls = document.getElementById("login-screen");
+    if (ls) ls.style.display = "none";
+
+    // init date pickers
+    try { initAfterLogin(); } catch(e) {}
+
+    // แสดงชื่อใน header
+    var nick = user;
+    for (var i = 0; i < STAFF.length; i++) {
+      if (STAFF[i].value === user) {
+        nick = STAFF[i].label.split("—")[0].trim();
+        break;
+      }
+    }
+    var hn = document.getElementById("header-username");
+    if (hn) hn.textContent = nick;
+
+    // set incharge dropdowns
+    ["issue-incharge","return-incharge","receive-incharge","sale-incharge"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = user;
+    });
+
+  } catch(e) {
+    var errEl2 = document.getElementById("login-err");
+    if (errEl2) errEl2.textContent = "เกิดข้อผิดพลาด: " + e.message;
+    console.error("doLogin error:", e);
+  }
+}
+
+function doLogout() {
+  currentUser = "";
+  var pwEl   = document.getElementById("login-pw");
+  var userEl = document.getElementById("login-user");
+  var errEl  = document.getElementById("login-err");
+  var ls     = document.getElementById("login-screen");
+  var hn     = document.getElementById("header-username");
+  if (pwEl)   pwEl.value = "";
+  if (userEl) userEl.value = "";
+  if (errEl)  errEl.textContent = "";
+  if (ls)     ls.style.display = "flex";
+  if (hn)     hn.textContent = "—";
+}
+
+function togglePw() {
+  const inp = document.getElementById("login-pw");
+  const eye = document.getElementById("pw-eye");
+  if (inp.type === "password") {
+    inp.type = "text";
+    eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type = "password";
+    eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+let PRODUCTS = []; // loaded from API
+
+let JOBS = []; // loaded from API
+
+let issueCarts = [];
+let returnCart = [];
+let receiveCart = [];
+let saleCart = [];
+let selProd = { issue: null, return: null, receive: null, sale: null };
+
+// ===== INIT =====
+async function init() {
+  // โหลดข้อมูลสินค้าและ jobs (ทำงานใน background)
+  setConnStatus("loading", "กำลังเชื่อมต่อ...");
+  try {
+    const [pRes, jRes] = await Promise.all([
+      apiFetch("getProducts"),
+      apiFetch("getJobs")
+    ]);
+    PRODUCTS = pRes.products || [];
+    JOBS     = jRes.jobs     || [];
+    populateJobSelects();
+    setConnStatus("ok", "เชื่อมต่อสำเร็จ · " + PRODUCTS.length + " รายการ");
+  } catch (err) {
+    setConnStatus("error", "เชื่อมต่อไม่ได้ — ใช้ข้อมูลตัวอย่าง");
+    loadDemoData();
+  }
+}
+
+// เรียกหลัง login เพื่อ init flatpickr และ set วันที่
+function initAfterLogin() {
+  const todayISO = new Date().toISOString().split("T")[0];
+  ["issue-date","return-date","receive-date","sale-date"].forEach(id => {
+    try {
+      const el = document.getElementById(id);
+      if (el && typeof flatpickr !== "undefined") {
+        flatpickr("#" + id, {
+          locale: "th",
+          dateFormat: "d F Y",
+          defaultDate: "today",
+          allowInput: false,
+        });
+      }
+    } catch(e) {
+      // fallback: set text value directly
+      const el = document.getElementById(id);
+      if (el) el.value = new Date().toLocaleDateString("th-TH", { year:"numeric", month:"long", day:"numeric" });
+    }
+  });
+}
+
+function loadDemoData() {
+  if (PRODUCTS.length === 0) {
+    PRODUCTS = [
+      {id:"wo24yc31",name:"BCC_THW #1.5 SQ.MM สีดำ",brand:"BCC",category:"สายไฟ",qty:2,unit:"ม้วน",baseUnit:"เมตร",issueUnit:"เมตร",convR_M:100,convR_KG:1.9,size:"1.5",imageURL:"",costPrice:592},
+      {id:"oc92nb10",name:"ABB_CB 1P SH201-C6",brand:"ABB",category:"MCB Circuit Breaker",qty:71,unit:"กล่อง",baseUnit:"ตัว",issueUnit:"ตัว",convR_M:12,convR_KG:null,size:"6W 1P",imageURL:"",costPrice:95},
+      {id:"lf72vm57",name:"3M_เทปพันสายไฟ ม้วนเล็ก",brand:"3M",category:"เทปพันสายไฟ",qty:20,unit:"ม้วน",baseUnit:"กล่อง",issueUnit:"ม้วน",convR_M:10,convR_KG:null,size:"",imageURL:"",costPrice:13},
+    ];
+  }
+  if (JOBS.length === 0) {
+    JOBS = [
+      {id:"j1",name:"ศรีตรัง แอโกรอินดัสทรี อุดรธานี",site:"",incharge:"",status:"open"},
+      {id:"j2",name:"ไทยฮั้วยางพารา สาขาอุดรธานี",site:"",incharge:"",status:"open"},
+      {id:"j3",name:"ห้างหุ้นส่วนจำกัด เอ็นโซน เซอร์วิส",site:"",incharge:"",status:"open"},
+    ];
+  }
+  populateJobSelects();
+}
+
+function populateJobSelects() {
+  ["issue-job","return-job","hist-job"].forEach(id => {
+    const sel = document.getElementById(id);
+    const isHist = id === "hist-job";
+    sel.innerHTML = `<option value="">${isHist ? "ทั้งหมด" : "— เลือก Job —"}</option>`;
+    JOBS.forEach(j => {
+      const o = document.createElement("option");
+      o.value = j.id; o.textContent = j.name;
+      sel.appendChild(o);
+    });
+  });
+}
+
+// ===== API =====
+async function apiFetch(action, params = {}) {
+  const url = new URL(APPS_SCRIPT_URL);
+  url.searchParams.set("action", action);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { redirect: "follow" });
+  return res.json();
+}
+
+async function apiPost(payload) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(payload),
+    redirect: "follow"
+  });
+  return res.json();
+}
+
+// ===== CONN STATUS =====
+function setConnStatus(state, text) {
+  const dot = document.getElementById("dot");
+  document.getElementById("conn-text").textContent = text;
+  dot.className = "status-dot" + (state === "error" ? " error" : state === "loading" ? " loading" : "");
+}
+
+// ===== TABS =====
+function switchTab(name) {
+  ["issue","return","receive","sale","history","stock","scrap","summary"].forEach(t => {
+    document.getElementById("panel-" + t).classList.toggle("active", t === name);
+    document.getElementById("tab-" + t + "-btn").classList.toggle("active", t === name);
+  });
+  if (name === "history") loadHistory();
+  if (name === "stock")   { loadStock(); }
+  if (name === "scrap")   { initScrapTab(); }
+  if (name === "summary") { loadSummary(); }
+}
+
+// ===== JOB CHANGE =====
+function onJobChange(mode) {
+  const jid = document.getElementById(mode + "-job").value;
+  const job = JOBS.find(j => j.id === jid);
+  if (job && job.incharge) {
+    document.getElementById(mode + "-incharge").value = job.incharge;
+  }
+}
+
+// ===== SEARCH =====
+function searchProds(q) {
+  if (!q || q.length < 1) return [];
+  const lq = q.toLowerCase();
+  return PRODUCTS.filter(p =>
+    p.name.toLowerCase().includes(lq) ||
+    p.brand.toLowerCase().includes(lq) ||
+    p.category.toLowerCase().includes(lq) ||
+    (p.size || "").toLowerCase().includes(lq)
+  ).slice(0, 14);
+}
+
+function thumb(url, cls) {
+  if (url) return `<img src="${url}" class="${cls}" onerror="this.style.display='none'" alt="">`;
+  return `<div class="${cls}-ph"><svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM12 12h.01"/></svg></div>`;
+}
+
+function onSearch(mode) {
+  const q = document.getElementById(mode + "-search").value;
+  const dd = document.getElementById(mode + "-dropdown");
+  const res = searchProds(q);
+  if (!res.length || !q) { dd.style.display = "none"; return; }
+  dd.innerHTML = res.map(p => `
+    <div class="dd-item" onclick="selectProd('${p.id}','${mode}')">
+      ${thumb(p.imageURL, "dd-thumb")}
+      <div style="flex:1;min-width:0">
+        <div class="dd-name">${p.name}</div>
+        <div class="dd-sub">${[p.brand, p.category, p.size].filter(Boolean).join(" · ")}</div>
+      </div>
+      <span class="dd-qty">${p.qty} ${p.unit}</span>
+    </div>`).join("");
+  dd.style.display = "block";
+}
+
+function selectProd(id, mode) {
+  const p = PRODUCTS.find(x => x.id === id);
+  selProd[mode] = p;
+  document.getElementById(mode + "-dropdown").style.display = "none";
+  document.getElementById(mode + "-search").value = "";
+
+  // หน่วยหลัก = unit (ม้วน), หน่วยเล็ก = baseUnit หรือ issueUnit (เมตร)
+  const base    = p.baseUnit || p.issueUnit || p.unit;
+  const convR_M = p.convR_M || 1;
+
+  const unitOpts = [p.unit]; // เสมอมีหน่วยหลัก
+  if (base && base !== p.unit && !unitOpts.includes(base)) unitOpts.push(base);
+  if (p.issueUnit && !unitOpts.includes(p.issueUnit))      unitOpts.push(p.issueUnit);
+  if (p.convR_KG  && !unitOpts.includes("กิโลกรัม"))       unitOpts.push("กิโลกรัม");
+
+  // แสดง stock ในทุกหน่วย
+  const qtyM  = (p.qty || 0) * convR_M;
+  const qtyKg = p.convR_KG ? (p.qty * p.convR_KG).toFixed(1) : null;
+  const stockPills = [`${p.qty} ${p.unit}`];
+  if (base !== p.unit && convR_M !== 1) stockPills.push(`${qtyM.toFixed(0)} ${base}`);
+  if (qtyKg) stockPills.push(`${qtyKg} กก.`);
+
+  // conv hint
+  const convLines = [];
+  if (convR_M !== 1 && base !== p.unit) convLines.push(`1 ${p.unit} = ${convR_M} ${base}`);
+  if (p.convR_KG) convLines.push(`1 กก. ≈ ${(convR_M/p.convR_KG).toFixed(2)} ${base}`);
+
+  const btnStyle = mode==="receive" ? 'style="background:#1565C0;color:#fff;border-color:#1565C0"'
+                 : mode==="sale"    ? 'style="background:#E65100;color:#fff;border-color:#E65100"'
+                 : "";
+  const btnCls   = mode==="issue" ? "btn-primary" : mode==="return" ? "btn-success" : "";
+
+  const box = document.getElementById(mode + "-sel-box");
+  box.style.display = "block";
+  box.innerHTML = `
+    <div class="sel-box">
+      ${thumb(p.imageURL, "sel-thumb")}
+      <div style="flex:1;min-width:0">
+        <div class="sel-name">${p.name}</div>
+        <div class="sel-meta">${[p.brand, p.category].filter(Boolean).join(" · ")}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">
+          ${stockPills.map(s=>`<span style="background:var(--blue-lt);color:var(--blue);padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600">📦 ${s}</span>`).join("")}
+        </div>
+        <div class="qty-row">
+          <input type="number" id="${mode}-qty" value="1" min="0.01" step="0.01" style="width:90px;font-size:18px;font-weight:700" oninput="updateQtyPreview(\'${mode}\')">
+          <select id="${mode}-unit" onchange="updateQtyPreview(\'${mode}\')">
+            ${unitOpts.map(u=>`<option value="${u}">${u}</option>`).join("")}
+          </select>
+          ${mode==="receive" ? `<input type="number" id="${mode}-cost" placeholder="ราคาทุน/หน่วย" step="0.01" min="0" style="width:120px">` : ""}
+          ${mode==="sale"    ? `<input type="number" id="${mode}-price" placeholder="ราคาขาย/หน่วย" step="0.01" min="0" style="width:120px">` : ""}
+          <input type="text" id="${mode}-note" placeholder="หมายเหตุ" style="flex:1;min-width:80px">
+          <button class="btn btn-sm ${btnCls}" ${btnStyle} onclick="addToCart(\'${mode}\')">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            เพิ่ม
+          </button>
+        </div>
+        <div id="${mode}-qty-preview" style="font-size:12px;color:var(--text3);margin-top:6px;min-height:18px"></div>
+        ${convLines.length ? `<div class="conv-hint">📐 ${convLines.join("  ·  ")}</div>` : ""}
+      </div>
+    </div>`;
+  updateQtyPreview(mode);
+}
+
+function updateQtyPreview(mode) {
+  const p   = selProd[mode];
+  if (!p) return;
+  const qty  = parseFloat(document.getElementById(mode+"-qty")?.value) || 0;
+  const unit = document.getElementById(mode+"-unit")?.value || p.unit;
+  const prev = document.getElementById(mode+"-qty-preview");
+  if (!prev || !qty) { if(prev) prev.textContent=""; return; }
+
+  const base    = p.baseUnit || p.issueUnit || p.unit;
+  const convR_M = p.convR_M || 1;
+  const convR_KG= p.convR_KG || null;
+
+  // แปลงทุก unit → base
+  let baseQty;
+  if (unit === p.unit)         baseQty = qty * convR_M;
+  else if (unit === "กิโลกรัม" && convR_KG) baseQty = qty * (convR_M / convR_KG);
+  else                         baseQty = qty; // already base
+
+  const parts = [];
+  if (unit !== base) parts.push(`= ${baseQty.toFixed(2)} ${base}`);
+
+  // สต็อกหลังทำรายการ
+  const currentBase = (p.qty || 0) * convR_M;
+  let afterBase;
+  if (mode==="issue" || mode==="sale") {
+    afterBase = currentBase - baseQty;
+    parts.push(`สต็อกหลัง: ${afterBase.toFixed(2)} ${base}`);
+  } else {
+    afterBase = currentBase + baseQty;
+    parts.push(`สต็อกหลัง: ${afterBase.toFixed(2)} ${base}`);
+  }
+
+  prev.textContent = parts.join("  ·  ");
+  prev.style.color = afterBase < 0 ? "var(--red)" : "var(--text3)";
+}
+
+
+// ===== CART =====
+function getCart(mode) {
+  if (mode === "issue")   return issueCarts;
+  if (mode === "return")  return returnCart;
+  if (mode === "receive") return receiveCart;
+  if (mode === "sale")    return saleCart;
+  return [];
+}
+
+function addToCart(mode) {
+  const p    = selProd[mode];
+  if (!p) return;
+  const qty   = parseFloat(document.getElementById(mode + "-qty").value) || 1;
+  const unit  = document.getElementById(mode + "-unit").value;
+  const note  = document.getElementById(mode + "-note").value;
+  const cost  = mode === "receive" ? (parseFloat(document.getElementById("receive-cost").value) || 0) : 0;
+  const price = mode === "sale"    ? (parseFloat(document.getElementById("sale-price").value)   || 0) : 0;
+  getCart(mode).push({ prod: p, qty, unit, note, cost, price });
+  selProd[mode] = null;
+  document.getElementById(mode + "-sel-box").style.display = "none";
+  renderCart(mode);
+}
+
+function removeFromCart(mode, idx) {
+  getCart(mode).splice(idx, 1);
+  renderCart(mode);
+}
+
+function renderCart(mode) {
+  const cart = getCart(mode);
+  const el   = document.getElementById(mode + "-cart");
+  const cnt  = document.getElementById(mode + "-cart-count");
+  cnt.textContent = cart.length + " รายการ";
+
+  if (!cart.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+      ยังไม่มีรายการ
+    </div>`;
+    return;
+  }
+
+  // คำนวณยอดรวมสำหรับ receive/sale
+  const totalAmt = (mode === "receive" || mode === "sale")
+    ? cart.reduce((s, it) => s + it.qty * (mode === "receive" ? it.cost : it.price), 0)
+    : 0;
+
+  const qtyColor = mode === "receive" ? "#1565C0" : mode === "sale" ? "#E65100"
+                 : mode === "issue"   ? "var(--red)" : "var(--green)";
+
+  el.innerHTML = cart.map((it, i) => {
+    const amt = mode === "receive" ? it.cost * it.qty : mode === "sale" ? it.price * it.qty : 0;
+    return `
+    <div class="cart-item">
+      ${thumb(it.prod.imageURL, "cart-thumb")}
+      <div style="flex:1;min-width:0">
+        <div class="cart-name">${it.prod.name}</div>
+        ${it.note ? `<div class="cart-note">${it.note}</div>` : ""}
+      </div>
+      ${mode === "receive" && it.cost ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.cost.toLocaleString()} ฿/หน่วย<br><strong>${amt.toLocaleString()} ฿</strong></div>` : ""}
+      ${mode === "sale"    && it.price ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.price.toLocaleString()} ฿/หน่วย<br><strong>${amt.toLocaleString()} ฿</strong></div>` : ""}
+      <span class="cart-qty" style="color:${qtyColor}">${it.qty} ${it.unit}</span>
+      <button class="btn-icon" onclick="removeFromCart('${mode}',${i})" title="ลบ">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join("") + (totalAmt > 0 ? `
+    <div style="text-align:right;padding:10px 4px 4px;font-size:14px;font-weight:600;border-top:0.5px solid var(--border);margin-top:4px">
+      ยอดรวม: <span style="color:${qtyColor}">${totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2})} บาท</span>
+    </div>` : "");
+}
+
+// ===== SUBMIT issue/return =====
+async function submitTransaction(mode) {
+  const jid      = document.getElementById(mode + "-job").value;
+  const cart     = getCart(mode);
+  const incharge = document.getElementById(mode + "-incharge").value || currentUser || "-";
+  const remark   = mode === "issue" ? (document.getElementById("issue-remark").value || "") : "";
+
+  if (!jid)         { toast("กรุณาเลือก Job", "error"); return; }
+  if (!cart.length) { toast("กรุณาเพิ่มอุปกรณ์อย่างน้อย 1 รายการ", "error"); return; }
+
+  const job   = JOBS.find(j => j.id === jid);
+  const today = document.getElementById(mode + "-date").value || toThaiDate(new Date().toISOString().split("T")[0]);
+  const btn   = document.getElementById(mode + "-submit-btn");
+  const label = mode === "issue" ? "การเบิก" : "การคืน";
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> กำลังบันทึก...`;
+
+  const payload = {
+    action: "saveTransaction",
+    data: {
+      type: mode, jobId: jid, jobName: job ? job.name : jid,
+      incharge, remark, date: today, updateQty: true,
+      items: cart.map(it => ({
+        productId: it.prod.id, productName: it.prod.name,
+        qty: it.qty, unit: it.unit, note: it.note || "",
+      }))
+    }
+  };
+
+  try {
+    const result = await apiPost(payload);
+
+    if (result.success) {
+      if (mode === "issue") { issueCarts = []; document.getElementById("issue-remark").value = ""; }
+      else                  { returnCart = []; }
+      renderCart(mode);
+      toast(`บันทึก${label}สำเร็จ · ${cart.length} รายการ (${result.tranId})`, "success");
+    } else {
+      toast("เกิดข้อผิดพลาด: " + (result.error || "ไม่ทราบสาเหตุ"), "error");
+    }
+  } catch (err) {
+    toast("เชื่อมต่อไม่ได้: " + err.message, "error");
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg> ยืนยัน${label}`;
+}
+
+// ===== SUBMIT receive/sale =====
+async function submitSimple(mode) {
+  const cart     = getCart(mode);
+  const incharge = document.getElementById(mode + "-incharge").value || currentUser || "-";
+  const today    = document.getElementById(mode + "-date").value || toThaiDate(new Date().toISOString().split("T")[0]);
+  const btn      = document.getElementById(mode + "-submit-btn");
+
+  if (!cart.length) { toast("กรุณาเพิ่มอุปกรณ์อย่างน้อย 1 รายการ", "error"); return; }
+
+  let jobName = "เอ็นโซน เซอร์วิส";
+  let remark  = "";
+
+  if (mode === "receive") {
+    const supplier = document.getElementById("receive-supplier").value.trim();
+    const po       = document.getElementById("receive-po").value.trim();
+    const rem      = document.getElementById("receive-remark").value.trim();
+    jobName = supplier || "ซัพพลายเออร์ไม่ระบุ";
+    remark  = [po ? "PO: " + po : "", rem].filter(Boolean).join(" | ");
+  } else {
+    const customer = document.getElementById("sale-customer").value.trim();
+    const phone    = document.getElementById("sale-phone").value.trim();
+    const rem      = document.getElementById("sale-remark").value.trim();
+    if (!customer) { toast("กรุณาระบุชื่อลูกค้า", "error"); return; }
+    jobName = customer + (phone ? " (" + phone + ")" : "");
+    remark  = rem;
+  }
+
+  const totalAmt = cart.reduce((s, it) => s + it.qty * (mode === "receive" ? it.cost : it.price), 0);
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> กำลังบันทึก...`;
+
+  const payload = {
+    action: "saveTransaction",
+    data: {
+      type: mode, jobId: mode, jobName,
+      incharge, remark, date: today, updateQty: true,
+      items: cart.map(it => ({
+        productId: it.prod.id, productName: it.prod.name,
+        qty: it.qty, unit: it.unit,
+        note: [
+          it.note || "",
+          mode === "receive" && it.cost  ? "ราคาทุน: " + it.cost + " ฿"  : "",
+          mode === "sale"    && it.price ? "ราคาขาย: " + it.price + " ฿" : "",
+        ].filter(Boolean).join(" | "),
+      }))
+    }
+  };
+
+  try {
+    const result = await apiPost(payload);
+
+    if (result.success) {
+      const label = mode === "receive" ? "การรับสินค้าเข้า" : "การขาย";
+      const extra = totalAmt > 0 ? ` · ยอดรวม ${totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2})} บาท` : "";
+      toast(`บันทึก${label}สำเร็จ · ${cart.length} รายการ${extra}`, "success");
+
+      if (mode === "receive") {
+        receiveCart = [];
+        document.getElementById("receive-supplier").value = "";
+        document.getElementById("receive-po").value = "";
+        document.getElementById("receive-remark").value = "";
+      } else {
+        saleCart = [];
+        document.getElementById("sale-customer").value = "";
+        document.getElementById("sale-phone").value = "";
+        document.getElementById("sale-remark").value = "";
+      }
+      renderCart(mode);
+    } else {
+      toast("เกิดข้อผิดพลาด: " + (result.error || "ไม่ทราบสาเหตุ"), "error");
+    }
+  } catch (err) {
+    toast("เชื่อมต่อไม่ได้: " + err.message, "error");
+  }
+
+  btn.disabled = false;
+  const btnLabel = mode === "receive" ? "ยืนยันการรับสินค้าเข้า" : "ยืนยันการขาย";
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg> ${btnLabel}`;
+}
+
+// ===== HISTORY =====
+async function loadHistory() {
+  const jobId = document.getElementById("hist-job").value;
+  const type  = document.getElementById("hist-type").value;
+  const el    = document.getElementById("hist-container");
+  el.innerHTML = `<div class="loading-overlay">กำลังโหลด...</div>`;
+
+  try {
+    const result = await apiFetch("getTransactions", { jobId, type });
+
+    const list = result.transactions || [];
+    if (!list.length) {
+      el.innerHTML = `<div class="empty-state" style="padding:40px">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+        ยังไม่มีข้อมูล Transaction
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = list.map(t => {
+      const typeLabel = { issue:"เบิก", return:"คืน", receive:"รับเข้า", sale:"ขายออก" }[t.type] || t.type;
+      const badgeCls  = { issue:"badge-issue", return:"badge-return", receive:"badge-receive", sale:"badge-sale" }[t.type] || "badge-issue";
+      const tJson     = encodeURIComponent(JSON.stringify(t));
+      return `
+      <div class="hist-card">
+        <div class="hist-header">
+          <div style="flex:1;min-width:0">
+            <span class="badge ${badgeCls}">${typeLabel}</span>
+            <span class="hist-job" style="margin-left:6px">${t.jobName}</span>
+            <div class="hist-meta" style="text-align:left;margin-top:4px">${t.date} · ${t.incharge}</div>
+          </div>
+          <button class="btn btn-sm" onclick="printFromHistory('${tJson}')"
+            style="background:#555;color:#fff;border-color:#555;flex-shrink:0;gap:5px;padding:7px 12px">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            พิมพ์ PDF
+          </button>
+        </div>
+        <div class="hist-items">
+          ${(t.items || []).map(it => `<span class="hist-item-pill">${it.productName} <strong>${it.qty} ${it.unit}</strong></span>`).join("")}
+        </div>
+        ${t.remark ? `<div style="font-size:11px;color:var(--text3);margin-top:6px">${t.remark}</div>` : ""}
+      </div>`;
+    }).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่ได้: ${err.message}</div>`;
+  }
+}
+
+// ===== SUMMARY =====
+function loadSummary() {
+  const el = document.getElementById("summary-container");
+  // render ทันทีจาก PRODUCTS ที่มีอยู่
+  renderSummaryLocal(el, null);
+  // fetch transaction data ใน background (ไม่บล็อค UI)
+  setTimeout(() => fetchSummaryBackground(el), 100);
+}
+
+async function fetchSummaryBackground(el) {
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(APPS_SCRIPT_URL + "?action=getSummary", { redirect:"follow", signal:controller.signal });
+    clearTimeout(tid);
+    const result = await res.json();
+    if (result && result.summary && result.summary.length) {
+      renderSummaryLocal(el, result.summary);
+    }
+  } catch(e) {
+    const note = document.getElementById("summary-api-note");
+    if (note) note.textContent = "ไม่สามารถดึง Transaction ได้ในขณะนี้";
+  }
+}
+
+function renderSummaryLocal(el, apiSummary) {
+  // ---- สถิติจาก PRODUCTS ที่ฝังใน App ----
+  const totalProducts = PRODUCTS.length;
+  const outOfStock    = PRODUCTS.filter(p => p.qty <= 0).length;
+  const lowStock      = PRODUCTS.filter(p => p.qty > 0 && p.qty <= 5).length;
+  const normalStock   = PRODUCTS.filter(p => p.qty > 5).length;
+
+  // ---- หมวดหมู่ top ----
+  const catMap = {};
+  PRODUCTS.forEach(p => {
+    if (!p.category) return;
+    catMap[p.category] = (catMap[p.category] || 0) + 1;
+  });
+  const topCats = Object.entries(catMap)
+    .sort((a,b) => b[1]-a[1]).slice(0,5);
+
+  // ---- Transaction summary จาก API (ถ้ามี) ----
+  let tranSection = "";
+  if (apiSummary && apiSummary.length) {
+    const totalIssue   = apiSummary.reduce((s,r) => s+(r.issue   ||0), 0);
+    const totalReturn  = apiSummary.reduce((s,r) => s+(r.return  ||0), 0);
+    const totalReceive = apiSummary.reduce((s,r) => s+(r.receive ||0), 0);
+    const totalSale    = apiSummary.reduce((s,r) => s+(r.sale    ||0), 0);
+
+    tranSection = `
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+          สถิติ Transaction ตาม Job
+        </div>
+        <div class="stat-grid" style="margin-bottom:14px">
+          <div class="stat"><div class="stat-label">เบิก</div><div class="stat-val" style="color:var(--red)">${totalIssue}</div></div>
+          <div class="stat"><div class="stat-label">คืน</div><div class="stat-val" style="color:var(--green)">${totalReturn}</div></div>
+          <div class="stat"><div class="stat-label">รับเข้า</div><div class="stat-val" style="color:#1565C0">${totalReceive}</div></div>
+          <div class="stat"><div class="stat-label">ขายออก</div><div class="stat-val" style="color:#E65100">${totalSale}</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Job / ลูกค้า / ซัพพลายเออร์</th><th>เบิก</th><th>คืน</th><th>รับเข้า</th><th>ขาย</th></tr></thead>
+            <tbody>
+              ${apiSummary.map(r => `
+                <tr>
+                  <td style="font-size:13px">${r.jobName||r.jobId}</td>
+                  <td><span class="badge badge-issue">${r.issue||0}</span></td>
+                  <td><span class="badge badge-return">${r.return||0}</span></td>
+                  <td><span class="badge badge-receive">${r.receive||0}</span></td>
+                  <td><span class="badge badge-sale">${r.sale||0}</span></td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } else {
+    tranSection = `
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+          สถิติ Transaction ตาม Job
+        </div>
+        <div class="empty-state" style="padding:24px">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="summary-api-note">กำลังดึงข้อมูลจาก Sheet...</span>
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <!-- สต็อกสินค้า -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        ภาพรวมสต็อกสินค้า
+      </div>
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="stat-label">สินค้าทั้งหมด</div>
+          <div class="stat-val">${totalProducts}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">หมดสต็อก</div>
+          <div class="stat-val" style="color:var(--red)">${outOfStock}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">ใกล้หมด (≤5)</div>
+          <div class="stat-val" style="color:#E65100">${lowStock}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">ปกติ (>5)</div>
+          <div class="stat-val" style="color:var(--green)">${normalStock}</div>
+        </div>
+      </div>
+
+      <!-- Top categories -->
+      <div style="margin-top:8px">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">หมวดหมู่ที่มีสินค้ามากที่สุด</div>
+        ${topCats.map(([cat, cnt]) => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+            <div style="flex:1;font-size:13px;font-weight:500">${cat}</div>
+            <div style="font-size:12px;color:var(--text2)">${cnt} รายการ</div>
+            <div style="width:${Math.round(cnt/totalProducts*140)}px;height:8px;background:var(--blue);border-radius:4px;min-width:4px"></div>
+          </div>`).join("")}
+      </div>
+
+      <!-- Quick shortcuts -->
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="switchTab('stock')" style="font-size:13px">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          ดูคลังสินค้า
+        </button>
+        <button class="btn btn-sm" onclick="switchTab('stock');setTimeout(()=>{document.getElementById('stock-filter').value='out';renderStock()},100)" style="font-size:13px;color:var(--red);border-color:var(--red)">
+          ⚠ สินค้าหมด ${outOfStock} รายการ
+        </button>
+        ${lowStock>0?`<button class="btn btn-sm" onclick="switchTab('stock');setTimeout(()=>{document.getElementById('stock-filter').value='low';renderStock()},100)" style="font-size:13px;color:#E65100;border-color:#E65100">
+          ⚠ ใกล้หมด ${lowStock} รายการ
+        </button>`:""}
+      </div>
+    </div>
+
+    ${tranSection}
+  `;
+}
+
+// ===== STOCK TAB =====
+let orderList = new Set(); // เก็บ productId ที่ tick ว่าจะสั่ง
+
+function loadStock() {
+  // populate category dropdown ครั้งแรก
+  const catSel = document.getElementById("stock-cat");
+  if (catSel && catSel.options.length <= 1) {
+    const cats = [...new Set(PRODUCTS.map(p => p.category).filter(Boolean))].sort();
+    cats.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c; o.textContent = c;
+      catSel.appendChild(o);
+    });
+  }
+  // render ทันทีเลย
+  renderStock();
+}
+
+async function refreshStockFromSheet() {
+  const btn  = document.getElementById("stock-refresh-btn");
+  const icon = document.getElementById("refresh-icon");
+  const note = document.getElementById("stock-last-update");
+
+  // spinning animation
+  btn.disabled = true;
+  icon.style.animation = "spin 0.8s linear infinite";
+  if (note) note.textContent = "กำลังอัปเดต...";
+
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(APPS_SCRIPT_URL + "?action=getProducts", { redirect:"follow", signal:controller.signal });
+    clearTimeout(tid);
+    const result = await res.json();
+
+    if (result && result.products && result.products.length) {
+      const freshProds = result.products;
+
+      // อัปเดต qty ใน PRODUCTS array โดยจับคู่ด้วย id
+      let updated = 0;
+      freshProds.forEach(fresh => {
+        const idx = PRODUCTS.findIndex(p => p.id === fresh.id);
+        if (idx >= 0) {
+          const oldQty = PRODUCTS[idx].qty;
+          PRODUCTS[idx].qty = fresh.qty;
+          if (oldQty !== fresh.qty) updated++;
+        }
+      });
+
+      // re-render
+      renderStock();
+
+      const now = new Date().toLocaleTimeString("th-TH", { hour:"2-digit", minute:"2-digit" });
+      if (note) note.textContent = `อัปเดตแล้ว ${now} · เปลี่ยนแปลง ${updated} รายการ`;
+      toast(`อัปเดตสต็อกสำเร็จ — เปลี่ยนแปลง ${updated} รายการ`, "success");
+    } else {
+      if (note) note.textContent = "ไม่สามารถดึงข้อมูลได้";
+      toast("ไม่สามารถดึงข้อมูลจาก Sheet ได้", "error");
+    }
+  } catch(err) {
+    const msg = err.name === "AbortError" ? "หมดเวลาเชื่อมต่อ" : err.message;
+    if (note) note.textContent = "ล้มเหลว: " + msg;
+    toast("รีเฟรชไม่สำเร็จ: " + msg, "error");
+  }
+
+  // stop spinning
+  icon.style.animation = "";
+  btn.disabled = false;
+}
+
+function renderStock() {
+  const q      = (document.getElementById("stock-search").value || "").toLowerCase();
+  const cat    = document.getElementById("stock-cat").value;
+  const filter = document.getElementById("stock-filter").value;
+
+  let list = PRODUCTS.filter(p => {
+    if (cat && p.category !== cat) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q) && !(p.size||"").toLowerCase().includes(q)) return false;
+    if (filter === "low")  return p.qty > 0 && p.qty <= 5;
+    if (filter === "out")  return p.qty <= 0;
+    if (filter === "ok")   return p.qty > 5;
+    return true;
+  });
+
+  // Alert box — สินค้าใกล้หมด/หมด
+  const alertBox = document.getElementById("stock-alert-box");
+  const lowItems = PRODUCTS.filter(p => p.qty <= 5);
+  const outItems = PRODUCTS.filter(p => p.qty <= 0);
+  if (lowItems.length > 0 && filter === "all") {
+    alertBox.innerHTML = `
+      <div style="background:#fff8e1;border:1.5px solid #ffc107;border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:20px;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">สินค้าที่ต้องการความสนใจ</div>
+          <div style="font-size:13px;color:var(--text2)">
+            หมดสต็อก <strong style="color:var(--red)">${outItems.length} รายการ</strong> · 
+            ใกล้หมด (≤5) <strong style="color:#E65100">${lowItems.length} รายการ</strong>
+            <span style="margin-left:8px;cursor:pointer;color:var(--blue);text-decoration:underline" 
+              onclick="document.getElementById('stock-filter').value='low';renderStock()">ดูรายการ →</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    alertBox.innerHTML = "";
+  }
+
+  const tbody  = document.getElementById("stock-tbody");
+  const empty  = document.getElementById("stock-empty");
+
+  if (!list.length) {
+    tbody.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  tbody.innerHTML = list.map(p => {
+    const qty = p.qty || 0;
+    let statusBadge, rowStyle = "";
+    if (qty <= 0) {
+      statusBadge = `<span class="badge" style="background:#fde8e8;color:#c0392b">หมด</span>`;
+      rowStyle = "background:#fff8f8";
+    } else if (qty <= 5) {
+      statusBadge = `<span class="badge" style="background:#fff3cd;color:#856404">ใกล้หมด</span>`;
+      rowStyle = "background:#fffdf0";
+    } else {
+      statusBadge = `<span class="badge badge-return">ปกติ</span>`;
+    }
+
+    const checked = orderList.has(p.id) ? "checked" : "";
+    const imgHtml = p.imageURL
+      ? `<img src="${p.imageURL}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;border:0.5px solid var(--border);margin-right:8px;vertical-align:middle;flex-shrink:0" onerror="this.style.display='none'">`
+      : "";
+
+    return `<tr style="${rowStyle}">
+      <td>
+        <div style="display:flex;align-items:center">
+          ${imgHtml}
+          <div>
+            <div style="font-size:13px;font-weight:600;line-height:1.3">${p.name}</div>
+            ${p.brand ? `<div style="font-size:11px;color:var(--text3)">${p.brand}${p.size ? " · " + p.size : ""}</div>` : ""}
+          </div>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${p.category}</td>
+      <td style="text-align:right;font-size:15px;font-weight:700;color:${qty<=0?"var(--red)":qty<=5?"#E65100":"var(--text)"}">${qty} <span style="font-size:11px;font-weight:400;color:var(--text3)">${p.unit}</span></td>
+      <td style="text-align:center">${statusBadge}</td>
+      <td style="text-align:center">
+        <input type="checkbox" ${checked} onchange="toggleOrder('${p.id}','${p.name.replace(/'/g,"\\'")}','${p.unit}')"
+          style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy)">
+      </td>
+    </tr>`;
+  }).join("");
+
+  renderOrderSummary();
+}
+
+function toggleOrder(id, name, unit) {
+  if (orderList.has(id)) {
+    orderList.delete(id);
+  } else {
+    orderList.add(id);
+  }
+  renderOrderSummary();
+}
+
+function renderOrderSummary() {
+  const box = document.getElementById("order-summary-box");
+  const listEl = document.getElementById("order-list");
+  if (!orderList.size) { box.style.display = "none"; return; }
+
+  box.style.display = "block";
+  const items = [...orderList].map(id => {
+    const p = PRODUCTS.find(x => x.id === id);
+    if (!p) return "";
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600">${p.name}</div>
+        <div style="font-size:12px;color:var(--text2)">${p.category}${p.brand?" · "+p.brand:""} · คงเหลือ <strong style="color:var(--red)">${p.qty} ${p.unit}</strong></div>
+      </div>
+      <button class="btn-icon" onclick="toggleOrder('${id}',null,null);renderStock()" title="ลบ">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  }).join("");
+  listEl.innerHTML = items + `<div style="padding:10px 0 2px;font-size:13px;color:var(--text2)">รวม <strong>${orderList.size} รายการ</strong> ที่ต้องสั่งเพิ่ม</div>`;
+}
+
+// ===== EXPORT EXCEL (CSV format ที่ Excel เปิดได้) =====
+function buildCSVData(forOrder = false) {
+  const BOM = "\uFEFF"; // UTF-8 BOM for Thai in Excel
+  let rows = [];
+
+  if (forOrder) {
+    rows.push(["ลำดับ","รหัสสินค้า","ชื่อสินค้า","ยี่ห้อ","หมวดหมู่","ขนาด","คงเหลือ","หน่วย","ราคาทุน","หมายเหตุ"]);
+    let i = 1;
+    orderList.forEach(id => {
+      const p = PRODUCTS.find(x => x.id === id);
+      if (p) rows.push([i++, p.id, p.name, p.brand||"", p.category, p.size||"", p.qty, p.unit, p.costPrice||"", "ควรสั่งเพิ่ม"]);
+    });
+  } else {
+    const q      = (document.getElementById("stock-search").value || "").toLowerCase();
+    const cat    = document.getElementById("stock-cat").value;
+    const filter = document.getElementById("stock-filter").value;
+    let list = PRODUCTS.filter(p => {
+      if (cat && p.category !== cat) return false;
+      if (q && !p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q)) return false;
+      if (filter === "low") return p.qty > 0 && p.qty <= 5;
+      if (filter === "out") return p.qty <= 0;
+      if (filter === "ok")  return p.qty > 5;
+      return true;
+    });
+
+    rows.push(["ลำดับ","รหัสสินค้า","ชื่อสินค้า","ยี่ห้อ","หมวดหมู่","ขนาด","คงเหลือ","หน่วย","หน่วยย่อย","ราคาทุน","สถานะ"]);
+    list.forEach((p, i) => {
+      const status = p.qty <= 0 ? "หมดสต็อก" : p.qty <= 5 ? "ใกล้หมด" : "ปกติ";
+      rows.push([i+1, p.id, p.name, p.brand||"", p.category, p.size||"", p.qty, p.unit, p.issueUnit||"", p.costPrice||"", status]);
+    });
+  }
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  return BOM + csv;
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const today = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\//g,"-");
+  downloadFile(buildCSVData(false), `ENZONE_Stock_${today}.csv`, "text/csv;charset=utf-8");
+  toast("ดาวน์โหลด CSV สำเร็จ", "success");
+}
+
+function exportExcel() {
+  // Export as CSV with .xlsx extension — Excel opens it directly
+  const today = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\//g,"-");
+  // Build proper tab-separated for better Excel compatibility
+  const BOM = "\uFEFF";
+  const q      = (document.getElementById("stock-search").value || "").toLowerCase();
+  const cat    = document.getElementById("stock-cat").value;
+  const filter = document.getElementById("stock-filter").value;
+  let list = PRODUCTS.filter(p => {
+    if (cat && p.category !== cat) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q)) return false;
+    if (filter === "low") return p.qty > 0 && p.qty <= 5;
+    if (filter === "out") return p.qty <= 0;
+    if (filter === "ok")  return p.qty > 5;
+    return true;
+  });
+
+  const rows = [
+    ["ลำดับ","รหัสสินค้า","ชื่อสินค้า","ยี่ห้อ","หมวดหมู่","ขนาด","คงเหลือ","หน่วย","หน่วยย่อย","ราคาทุน","สถานะ"],
+    ...list.map((p,i) => {
+      const status = p.qty<=0?"หมดสต็อก":p.qty<=5?"ใกล้หมด":"ปกติ";
+      return [i+1, p.id, p.name, p.brand||"", p.category, p.size||"", p.qty, p.unit, p.issueUnit||"", p.costPrice||0, status];
+    })
+  ];
+  const tsv = BOM + rows.map(r => r.join("\t")).join("\r\n");
+  downloadFile(tsv, `ENZONE_Stock_${today}.xls`, "application/vnd.ms-excel;charset=utf-8");
+  toast("ดาวน์โหลด Excel สำเร็จ", "success");
+}
+
+function exportOrderExcel() {
+  if (!orderList.size) { toast("ยังไม่มีรายการที่เลือก", "error"); return; }
+  const today = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\//g,"-");
+  const BOM = "\uFEFF";
+  const rows = [
+    ["ลำดับ","รหัสสินค้า","ชื่อสินค้า","ยี่ห้อ","หมวดหมู่","ขนาด","คงเหลือ","หน่วย","ราคาทุน","จำนวนที่ต้องการสั่ง","หมายเหตุ"],
+  ];
+  let i = 1;
+  orderList.forEach(id => {
+    const p = PRODUCTS.find(x => x.id === id);
+    if (p) rows.push([i++, p.id, p.name, p.brand||"", p.category, p.size||"", p.qty, p.unit, p.costPrice||0, "", "ควรสั่งเพิ่ม"]);
+  });
+  const tsv = BOM + rows.map(r => r.join("\t")).join("\r\n");
+  downloadFile(tsv, `ENZONE_OrderList_${today}.xls`, "application/vnd.ms-excel;charset=utf-8");
+  toast(`Export รายการสั่งซื้อ ${orderList.size} รายการ สำเร็จ`, "success");
+}
+// ===== PRINT / PDF =====
+
+function printFromHistory(tJson) {
+  const t = JSON.parse(decodeURIComponent(tJson));
+  const typeLabel = { issue:"ใบเบิกอุปกรณ์", return:"ใบคืนอุปกรณ์", receive:"ใบรับสินค้าเข้า", sale:"ใบขายสินค้า" }[t.type] || t.type;
+  const badgeColor= { issue:"#c0392b", return:"#0F6E56", receive:"#1565C0", sale:"#E65100" }[t.type] || "#333";
+
+  const isMoneyType = t.type === "receive" || t.type === "sale";
+  const moneyLabel  = t.type === "receive" ? "ราคาทุน/หน่วย" : "ราคาขาย/หน่วย";
+
+  // parse note for cost/price
+  const rows = (t.items || []).map((it, i) => {
+    // extract cost/price from note field  e.g. "ราคาทุน: 500 ฿"
+    let price = 0, noteClean = it.note || "";
+    const priceMatch = noteClean.match(/ราคา(?:ทุน|ขาย):\s*([\d.]+)/);
+    if (priceMatch) {
+      price = parseFloat(priceMatch[1]) || 0;
+      noteClean = noteClean.replace(/ราคา(?:ทุน|ขาย):\s*[\d.]+ ฿\s*\|?\s*/g, "").trim();
+    }
+    const amt = price * (parseFloat(it.qty) || 0);
+    return `<tr>
+      <td style="text-align:center">${i+1}</td>
+      <td><strong>${it.productName || it.productId}</strong></td>
+      <td style="text-align:center">${parseFloat(it.qty)||0}</td>
+      <td style="text-align:center">${it.unit||""}</td>
+      ${isMoneyType ? `<td style="text-align:right">${price ? price.toLocaleString() : "-"}</td>
+      <td style="text-align:right">${amt ? amt.toLocaleString() : "-"}</td>` : ""}
+      <td>${noteClean}</td>
+    </tr>`;
+  }).join("");
+
+  // total
+  let totalAmt = 0;
+  if (isMoneyType) {
+    (t.items||[]).forEach(it => {
+      const m = (it.note||"").match(/ราคา(?:ทุน|ขาย):\s*([\d.]+)/);
+      if (m) totalAmt += parseFloat(m[1]||0) * (parseFloat(it.qty)||0);
+    });
+  }
+
+  // extra info line
+  const jobLine = t.type === "receive" ? `ซัพพลายเออร์` :
+                  t.type === "sale"    ? `ลูกค้า` : `Job / Site`;
+
+  const printWin = window.open("", "_blank", "width=820,height=680");
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<title>${typeLabel} — ENZONE SERVICE</title>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap'>
+<style>
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;font-size:14px;color:#111;padding:24px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f2744;padding-bottom:12px;margin-bottom:16px}
+  .company{font-size:19px;font-weight:700;color:#0f2744}
+  .company-sub{font-size:12px;color:#666;margin-top:2px}
+  .doc-type{display:inline-block;background:${badgeColor};color:#fff;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:4px}
+  .doc-no{font-size:12px;color:#666}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;background:#f7f7f7;padding:12px 14px;border-radius:8px;margin-bottom:16px}
+  .info-row{font-size:13px;display:flex;gap:8px}
+  .info-row span{color:#777;min-width:90px;flex-shrink:0}
+  .info-row strong{color:#111}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+  th{background:#0f2744;color:#fff;padding:9px 10px;text-align:left;font-weight:600;font-size:12px}
+  td{padding:8px 10px;border-bottom:0.5px solid #e0e0e0;vertical-align:top}
+  tr:nth-child(even) td{background:#f9f9f9}
+  .total-row td{font-weight:700;background:#e8f1ff;font-size:14px;border-top:2px solid #0f2744}
+  .footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:28px;padding-top:16px;border-top:1px solid #ddd}
+  .sign-box{text-align:center}
+  .sign-line{border-bottom:1px solid #555;margin:36px 12px 6px}
+  .sign-label{font-size:12px;color:#666}
+  .sign-name{font-size:13px;font-weight:600;color:#0f2744;margin-top:3px}
+  .remark-box{background:#fff8e1;border-left:4px solid #ffc107;padding:8px 12px;font-size:13px;margin-bottom:12px;border-radius:0 4px 4px 0}
+  @media print{
+    body{padding:0}
+    @page{margin:14mm;size:A4}
+  }
+</style>
+</head><body>
+<div class="header">
+  <div>
+    <div class="company">⚡ ENZONE SERVICE</div>
+    <div class="company-sub">ห้างหุ้นส่วนจำกัด เอ็นโซน เซอร์วิส</div>
+  </div>
+  <div style="text-align:right">
+    <div class="doc-type">${typeLabel}</div>
+    <div class="doc-no" style="margin-top:4px">เลขที่: ${t.id || "—"}</div>
+    <div class="doc-no">วันที่: ${t.date || "—"}</div>
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-row"><span>${jobLine}:</span><strong>${t.jobName||"—"}</strong></div>
+  <div class="info-row"><span>ผู้รับผิดชอบ:</span><strong>${t.incharge||"—"}</strong></div>
+  <div class="info-row"><span>วันที่:</span><strong>${t.date||"—"}</strong></div>
+  <div class="info-row"><span>จำนวนรายการ:</span><strong>${(t.items||[]).length} รายการ</strong></div>
+</div>
+
+${t.remark ? `<div class="remark-box">💬 หมายเหตุ: ${t.remark}</div>` : ""}
+
+<table>
+  <thead><tr>
+    <th style="width:32px;text-align:center">#</th>
+    <th>ชื่อสินค้า</th>
+    <th style="text-align:center;width:70px">จำนวน</th>
+    <th style="text-align:center;width:70px">หน่วย</th>
+    ${isMoneyType ? `<th style="text-align:right;width:110px">${moneyLabel}</th><th style="text-align:right;width:110px">รวม (฿)</th>` : ""}
+    <th>หมายเหตุ</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+  ${totalAmt > 0 ? `<tfoot><tr class="total-row">
+    <td colspan="${isMoneyType ? 4 : 4}"></td>
+    <td style="text-align:right">ยอดรวม</td>
+    <td style="text-align:right">${totalAmt.toLocaleString("th-TH",{minimumFractionDigits:2})} ฿</td>
+    <td></td>
+  </tr></tfoot>` : ""}
+</table>
+
+<div class="footer">
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้${t.type==="issue"?"เบิก":t.type==="return"?"คืน":t.type==="receive"?"รับสินค้า":"ขาย"}</div>
+    <div class="sign-name">${t.incharge||"—"}</div>
+  </div>
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้ตรวจสอบ</div>
+    <div class="sign-name">&nbsp;</div>
+  </div>
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้อนุมัติ</div>
+    <div class="sign-name">&nbsp;</div>
+  </div>
+</div>
+\x3cscript\x3esetTimeout(function(){window.print();},300);\x3c/script\x3e
+</body></html>`);
+  printWin.document.close();
+}
+
+function printTransaction(mode) {
+  // สร้าง slip สำหรับ print
+  const cart     = getCart(mode);
+  const jobEl    = document.getElementById(mode + "-job");
+  const jobName  = jobEl ? jobEl.options[jobEl.selectedIndex]?.text || "" : "";
+  const incharge = document.getElementById(mode + "-incharge")?.value || "";
+  const dateVal  = document.getElementById(mode + "-date")?.value || "";
+  const remark   = mode === "issue" ? (document.getElementById("issue-remark")?.value || "") : "";
+  const supplier = mode === "receive" ? (document.getElementById("receive-supplier")?.value || "") : "";
+  const customer = mode === "sale"    ? (document.getElementById("sale-customer")?.value || "")  : "";
+  const po       = mode === "receive" ? (document.getElementById("receive-po")?.value || "") : "";
+  const phone    = mode === "sale"    ? (document.getElementById("sale-phone")?.value || "")  : "";
+
+  if (!cart.length) { toast("ไม่มีรายการสำหรับพิมพ์", "error"); return; }
+
+  const typeLabel = { issue:"ใบเบิกอุปกรณ์", return:"ใบคืนอุปกรณ์", receive:"ใบรับสินค้าเข้า", sale:"ใบขายสินค้า" }[mode] || "";
+  const totalAmt  = (mode === "receive" || mode === "sale")
+    ? cart.reduce((s,it) => s + it.qty*(mode==="receive"?it.cost:it.price), 0) : 0;
+
+  const rows = cart.map((it, i) => {
+    const amt = mode === "receive" ? it.cost*it.qty : mode === "sale" ? it.price*it.qty : 0;
+    return `<tr>
+      <td style="text-align:center">${i+1}</td>
+      <td>${it.prod.name}</td>
+      <td style="text-align:center">${it.prod.category}</td>
+      <td style="text-align:center">${it.qty}</td>
+      <td style="text-align:center">${it.unit}</td>
+      ${(mode==="receive"||mode==="sale") ? `<td style="text-align:right">${(mode==="receive"?it.cost:it.price).toLocaleString()}</td><td style="text-align:right">${amt.toLocaleString()}</td>` : ""}
+      <td>${it.note||""}</td>
+    </tr>`;
+  }).join("");
+
+  const extraHeader = mode === "issue"   ? `<div class="info-row"><span>Job / Site:</span><strong>${jobName}</strong></div>` :
+                      mode === "return"  ? `<div class="info-row"><span>Job / Site:</span><strong>${jobName}</strong></div>` :
+                      mode === "receive" ? `<div class="info-row"><span>ซัพพลายเออร์:</span><strong>${supplier}</strong></div>${po?`<div class="info-row"><span>เลข PO:</span><strong>${po}</strong></div>`:""}` :
+                      mode === "sale"    ? `<div class="info-row"><span>ลูกค้า:</span><strong>${customer}</strong></div>${phone?`<div class="info-row"><span>เบอร์โทร:</span><strong>${phone}</strong></div>`:""}` : "";
+
+  const amtColHeader = mode === "receive" ? "<th>ราคาทุน/หน่วย</th><th>รวม (฿)</th>" :
+                       mode === "sale"    ? "<th>ราคาขาย/หน่วย</th><th>รวม (฿)</th>" : "";
+
+  const printWin = window.open("", "_blank", "width=800,height=600");
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<title>${typeLabel} — ENZONE SERVICE</title>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap'>
+<style>
+
+  * { box-sizing:border-box; margin:0; padding:0 }
+  body { font-family:'Sarabun',sans-serif; font-size:14px; color:#111; padding:24px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f2744; padding-bottom:12px; margin-bottom:16px }
+  .company { font-size:18px; font-weight:700; color:#0f2744 }
+  .company-sub { font-size:12px; color:#666; margin-top:2px }
+  .doc-title { text-align:right }
+  .doc-title h2 { font-size:16px; font-weight:700; color:#0f2744 }
+  .doc-no { font-size:12px; color:#666 }
+  .info-section { display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin-bottom:16px; background:#f8f8f8; padding:12px; border-radius:6px }
+  .info-row { display:flex; gap:8px; font-size:13px }
+  .info-row span { color:#666; min-width:100px }
+  .info-row strong { color:#111 }
+  table { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px }
+  th { background:#0f2744; color:#fff; padding:8px 10px; text-align:left; font-weight:600 }
+  td { padding:8px 10px; border-bottom:0.5px solid #ddd }
+  tr:nth-child(even) td { background:#f9f9f9 }
+  .total-row td { font-weight:700; background:#e8f1ff; font-size:14px }
+  .footer { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:24px; padding-top:16px; border-top:1px solid #ddd }
+  .sign-box { text-align:center }
+  .sign-line { border-bottom:1px solid #333; margin:32px 16px 6px }
+  .sign-label { font-size:12px; color:#666 }
+  .sign-name { font-size:13px; font-weight:600; margin-top:4px }
+  .remark-box { background:#fff8e1; border:1px solid #ffc107; border-radius:4px; padding:8px 12px; font-size:13px; margin-bottom:12px }
+  @media print {
+    body { padding:0 }
+    @page { margin:15mm; size:A4 }
+  }
+</style>
+</head><body>
+<div class="header">
+  <div>
+    <div class="company">⚡ ENZONE SERVICE</div>
+    <div class="company-sub">ห้างหุ้นส่วนจำกัด เอ็นโซน เซอร์วิส</div>
+  </div>
+  <div class="doc-title">
+    <h2>${typeLabel}</h2>
+    <div class="doc-no">วันที่: ${dateVal}</div>
+    <div class="doc-no">เลขที่: T${Date.now()}</div>
+  </div>
+</div>
+
+<div class="info-section">
+  ${extraHeader}
+  <div class="info-row"><span>ผู้รับผิดชอบ:</span><strong>${incharge}</strong></div>
+  <div class="info-row"><span>วันที่:</span><strong>${dateVal}</strong></div>
+</div>
+
+${remark ? `<div class="remark-box">หมายเหตุ: ${remark}</div>` : ""}
+
+<table>
+  <thead><tr>
+    <th style="width:36px;text-align:center">#</th>
+    <th>ชื่อสินค้า</th>
+    <th style="text-align:center">หมวดหมู่</th>
+    <th style="text-align:center">จำนวน</th>
+    <th style="text-align:center">หน่วย</th>
+    ${amtColHeader}
+    <th>หมายเหตุ</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+  ${totalAmt > 0 ? `<tfoot><tr class="total-row"><td colspan="${mode==="receive"||mode==="sale"?5:4}"></td><td style="text-align:right;font-weight:700">ยอดรวม</td><td style="text-align:right">${totalAmt.toLocaleString('th-TH',{minimumFractionDigits:2})} ฿</td><td></td></tr></tfoot>` : ""}
+</table>
+
+<div class="footer">
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้${mode==="issue"?"เบิก":mode==="return"?"คืน":mode==="receive"?"รับสินค้า":"ขาย"}</div>
+    <div class="sign-name">${incharge}</div>
+  </div>
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้ตรวจสอบ</div>
+    <div class="sign-name">&nbsp;</div>
+  </div>
+  <div class="sign-box">
+    <div class="sign-line"></div>
+    <div class="sign-label">ผู้อนุมัติ</div>
+    <div class="sign-name">&nbsp;</div>
+  </div>
+</div>
+\x3cscript\x3esetTimeout(function(){window.print();},300);\x3c/script\x3e
+</body></html>`);
+  printWin.document.close();
+}
+
+function printStockReport() {
+  const q      = (document.getElementById("stock-search")?.value || "").toLowerCase();
+  const cat    = document.getElementById("stock-cat")?.value || "";
+  const filter = document.getElementById("stock-filter")?.value || "all";
+
+  let list = PRODUCTS.filter(p => {
+    if (cat && p.category !== cat) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q)) return false;
+    if (filter === "low") return p.qty > 0 && p.qty <= 5;
+    if (filter === "out") return p.qty <= 0;
+    if (filter === "ok")  return p.qty > 5;
+    return true;
+  });
+
+  const today  = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+  const fLabel = { all:"ทั้งหมด", low:"ใกล้หมด (≤5)", out:"หมดสต็อก", ok:"ปกติ (>5)" }[filter] || "";
+
+  const rows = list.map((p,i) => {
+    const status = p.qty<=0?"หมดสต็อก":p.qty<=5?"ใกล้หมด":"ปกติ";
+    const color  = p.qty<=0?"#c0392b":p.qty<=5?"#E65100":"#0F6E56";
+    return `<tr>
+      <td style="text-align:center">${i+1}</td>
+      <td><strong>${p.name}</strong>${p.brand?`<br><small style="color:#888">${p.brand}</small>`:""}</td>
+      <td>${p.category}</td>
+      <td style="text-align:center">${p.size||"-"}</td>
+      <td style="text-align:center;font-weight:700;color:${color}">${p.qty}</td>
+      <td style="text-align:center">${p.unit}</td>
+      <td style="text-align:center;color:${color};font-weight:600">${status}</td>
+    </tr>`;
+  }).join("");
+
+  const outCnt = list.filter(p=>p.qty<=0).length;
+  const lowCnt = list.filter(p=>p.qty>0&&p.qty<=5).length;
+
+  const printWin = window.open("", "_blank", "width=900,height=700");
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<title>รายงานสต็อก — ENZONE SERVICE</title>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap'>
+<style>
+
+  * { box-sizing:border-box; margin:0; padding:0 }
+  body { font-family:'Sarabun',sans-serif; font-size:13px; color:#111; padding:20px }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f2744; padding-bottom:10px; margin-bottom:14px }
+  .company { font-size:17px; font-weight:700; color:#0f2744 }
+  .summary-badges { display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap }
+  .badge { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700 }
+  table { width:100%; border-collapse:collapse; font-size:12px }
+  th { background:#0f2744; color:#fff; padding:7px 10px; text-align:left; font-weight:600; font-size:12px }
+  td { padding:7px 10px; border-bottom:0.5px solid #ddd; vertical-align:top }
+  tr:nth-child(even) td { background:#f9f9f9 }
+  @media print {
+    body { padding:0; font-size:11px }
+    @page { margin:10mm; size:A4 landscape }
+  }
+</style>
+</head><body>
+<div class="header">
+  <div>
+    <div class="company">⚡ ENZONE SERVICE — รายงานสต็อกสินค้า</div>
+    <div style="font-size:12px;color:#666;margin-top:3px">พิมพ์วันที่: ${today} · กรองตาม: ${fLabel}${cat?" · หมวด: "+cat:""}</div>
+  </div>
+  <div style="text-align:right;font-size:12px;color:#666">
+    รวม <strong>${list.length}</strong> รายการ
+  </div>
+</div>
+<div class="summary-badges">
+  <span class="badge" style="background:#fde8e8;color:#c0392b">หมดสต็อก: ${outCnt} รายการ</span>
+  <span class="badge" style="background:#fff3cd;color:#856404">ใกล้หมด: ${lowCnt} รายการ</span>
+  <span class="badge" style="background:#e1f5ee;color:#0F6E56">ปกติ: ${list.length-outCnt-lowCnt} รายการ</span>
+</div>
+<table>
+  <thead><tr>
+    <th style="width:30px">#</th>
+    <th>ชื่อสินค้า</th>
+    <th>หมวดหมู่</th>
+    <th style="text-align:center">ขนาด</th>
+    <th style="text-align:center">คงเหลือ</th>
+    <th style="text-align:center">หน่วย</th>
+    <th style="text-align:center">สถานะ</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+\x3cscript\x3esetTimeout(function(){window.print();},300);\x3c/script\x3e
+</body></html>`);
+  printWin.document.close();
+}
+
+// ===== MODAL HELPERS =====
+let _addJobTargetMode = "issue";
+let _addProdTargetMode = "issue";
+
+function openModal(id) {
+  const m = document.getElementById("modal-" + id);
+  m.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+function closeModal(id) {
+  document.getElementById("modal-" + id).style.display = "none";
+  document.body.style.overflow = "";
+}
+document.addEventListener("click", e => {
+  // Only close modal on backdrop click if login is already done
+  if (!currentUser) return;
+  ["modal-add-job","modal-add-product"].forEach(id => {
+    const m = document.getElementById(id);
+    if (m && m.style.display !== "none" && e.target === m) {
+      closeModal(id.replace("modal-",""));
+    }
+  });
+});
+
+// ===== ADD JOB =====
+function openAddJob(mode) {
+  _addJobTargetMode = mode;
+  ["new-job-name","new-job-id","new-job-site"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("new-job-incharge").value = "";
+  openModal("add-job");
+  setTimeout(() => document.getElementById("new-job-name").focus(), 100);
+}
+
+async function saveNewJob() {
+  const name     = document.getElementById("new-job-name").value.trim();
+  const idVal    = document.getElementById("new-job-id").value.trim();
+  const site     = document.getElementById("new-job-site").value.trim();
+  const incharge = document.getElementById("new-job-incharge").value;
+  if (!name) { toast("กรุณาระบุชื่อ Job", "error"); return; }
+
+  const jobId  = idVal || "job_" + Date.now();
+  const newJob = { id: jobId, name, site, incharge, status: "open" };
+  JOBS.push(newJob);
+  populateJobSelects();
+
+  const sel = document.getElementById(_addJobTargetMode + "-job");
+  if (sel) { sel.value = jobId; onJobChange(_addJobTargetMode); }
+
+  // save to Sheet in background
+  try {
+    const d = encodeURIComponent(JSON.stringify({ jobId, name, site, incharge, status:"open" }));
+    await fetch(APPS_SCRIPT_URL + "?action=addJob&data=" + d, { redirect:"follow" });
+  } catch(e) {}
+
+  closeModal("add-job");
+  toast(`เพิ่ม Job "${name}" สำเร็จ`, "success");
+}
+
+// ===== ADD PRODUCT =====
+function openAddProduct(mode) {
+  _addProdTargetMode = mode;
+  ["np-name","np-brand","np-category","np-size","np-unit","np-issue-unit","np-image"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("np-qty").value   = "0";
+  document.getElementById("np-conv").value  = "1";
+  document.getElementById("np-cost").value  = "0";
+  document.getElementById("np-preview").style.display = "none";
+
+  const dl = document.getElementById("cat-list");
+  dl.innerHTML = "";
+  [...new Set(PRODUCTS.map(p => p.category).filter(Boolean))].sort().forEach(c => {
+    const o = document.createElement("option"); o.value = c; dl.appendChild(o);
+  });
+
+  openModal("add-product");
+  setTimeout(() => document.getElementById("np-name").focus(), 100);
+
+  document.getElementById("np-image").oninput = function() {
+    const url = this.value.trim();
+    const prev = document.getElementById("np-preview");
+    const img  = document.getElementById("np-preview-img");
+    if (url) {
+      img.src = url;
+      img.onerror = () => prev.style.display = "none";
+      img.onload  = () => prev.style.display = "flex";
+      document.getElementById("np-preview-name").textContent = document.getElementById("np-name").value || "ตัวอย่าง";
+    } else { prev.style.display = "none"; }
+  };
+}
+
+async function saveNewProduct() {
+  const name      = document.getElementById("np-name").value.trim();
+  const brand     = document.getElementById("np-brand").value.trim();
+  const category  = document.getElementById("np-category").value.trim();
+  const size      = document.getElementById("np-size").value.trim();
+  const qty       = parseFloat(document.getElementById("np-qty").value)  || 0;
+  const unit      = document.getElementById("np-unit").value.trim();
+  const issueUnit = document.getElementById("np-issue-unit").value.trim();
+  const convR_M   = parseFloat(document.getElementById("np-conv").value) || 1;
+  const costPrice = parseFloat(document.getElementById("np-cost").value) || 0;
+  const imageURL  = document.getElementById("np-image").value.trim();
+
+  if (!name)     { toast("กรุณาระบุชื่อสินค้า", "error"); return; }
+  if (!category) { toast("กรุณาระบุหมวดหมู่",   "error"); return; }
+  if (!unit)     { toast("กรุณาระบุหน่วยหลัก",  "error"); return; }
+
+  const newId   = "np_" + Date.now();
+  const newProd = { id:newId, name, brand, category, qty, unit, baseUnit:unit, issueUnit, convR_M, convR_KG:null, size, imageURL, costPrice };
+  PRODUCTS.unshift(newProd);
+
+  // update category dropdown in stock tab
+  const catSel = document.getElementById("stock-cat");
+  if (catSel && !Array.from(catSel.options).some(o => o.value === category)) {
+    const o = document.createElement("option"); o.value = category; o.textContent = category;
+    catSel.appendChild(o);
+  }
+
+  // save to Sheet in background
+  try {
+    const payload = encodeURIComponent(JSON.stringify({ productId:newId, name, brand, category, qty, unit, issueUnit, convR_M, costPrice, size, imageURL }));
+    await fetch(APPS_SCRIPT_URL + "?action=addProduct&data=" + payload, { redirect:"follow" });
+  } catch(e) {}
+
+  closeModal("add-product");
+  toast(`เพิ่มสินค้า "${name}" สำเร็จ`, "success");
+
+  setTimeout(() => {
+    const el = document.getElementById(_addProdTargetMode + "-search");
+    if (el) { el.value = name.substring(0,15); onSearch(_addProdTargetMode); }
+  }, 200);
+}
+
+// ===== SCRAP TAB =====
+let SCRAPS       = [];   // local cache จาก Sheet
+let scrapSelProd = null;
+
+function initScrapTab() {
+  // populate job filter
+  const jf = document.getElementById("scrap-job-filter");
+  if (jf.options.length <= 1) {
+    JOBS.forEach(j => {
+      const o = document.createElement("option");
+      o.value = j.name; o.textContent = j.name;
+      jf.appendChild(o);
+    });
+  }
+  renderScrapList();
+}
+
+async function loadScrap() {
+  const el = document.getElementById("scrap-list-container");
+  el.innerHTML = `<div class="loading-overlay">กำลังโหลด...</div>`;
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(APPS_SCRIPT_URL + "?action=getScraps", { redirect:"follow", signal:controller.signal });
+    clearTimeout(tid);
+    const result = await res.json();
+    SCRAPS = result.scraps || [];
+    renderScrapList();
+    toast(`โหลดรายการเศษ ${SCRAPS.length} รายการ`, "success");
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state">โหลดไม่ได้: ${err.message}<br><small>กด "บันทึกเศษใหม่" เพื่อเพิ่มรายการได้เลย</small></div>`;
+  }
+}
+
+function renderScrapList() {
+  const q    = (document.getElementById("scrap-search")?.value || "").toLowerCase();
+  const job  = document.getElementById("scrap-job-filter")?.value || "";
+  const cond = document.getElementById("scrap-condition-filter")?.value || "";
+
+  let list = SCRAPS.filter(s => {
+    if (q && !s.productName?.toLowerCase().includes(q) && !s.note?.toLowerCase().includes(q) && !s.location?.toLowerCase().includes(q)) return false;
+    if (job  && s.jobName !== job)  return false;
+    if (cond && s.condition !== cond) return false;
+    return true;
+  });
+
+  const el = document.getElementById("scrap-list-container");
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      ไม่พบรายการเศษ — กด "บันทึกเศษใหม่" เพื่อเริ่มบันทึก
+    </div>`;
+    return;
+  }
+
+  // สรุปมูลค่ารวม
+  const totalVal = list.reduce((s, r) => s + (parseFloat(r.value)||0), 0);
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 4px">
+      <span style="font-size:13px;color:var(--text2)">${list.length} รายการ</span>
+      ${totalVal > 0 ? `<span style="font-size:13px;font-weight:600;color:#E65100">มูลค่ารวม ~${totalVal.toLocaleString('th-TH')} ฿</span>` : ""}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+      ${list.map((s, i) => {
+        const condColor = s.condition==="ใช้ได้" ? "var(--green)" : s.condition==="ชำรุด" ? "var(--red)" : "#856404";
+        const condBg    = s.condition==="ใช้ได้" ? "var(--green-lt)" : s.condition==="ชำรุด" ? "var(--red-lt)" : "#fff3cd";
+        return `
+        <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+          ${s.imageUrl ? `<img src="${s.imageUrl}" style="width:100%;height:140px;object-fit:cover;border-bottom:0.5px solid var(--border)" onerror="this.style.display='none'">` : ""}
+          <div style="padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <div style="font-size:14px;font-weight:700;flex:1;padding-right:8px;line-height:1.3">${s.productName || "ไม่ระบุสินค้า"}</div>
+              <span style="background:${condBg};color:${condColor};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0">${s.condition||"ไม่แน่ใจ"}</span>
+            </div>
+            ${s.amount ? `<div style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px">📏 ${s.amount} ${s.unit||""}</div>` : ""}
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">
+              ${s.jobName ? `<div>📍 ${s.jobName}</div>` : ""}
+              ${s.location ? `<div>📦 เก็บที่: ${s.location}</div>` : ""}
+              ${s.note ? `<div>📝 ${s.note}</div>` : ""}
+              ${s.value > 0 ? `<div style="color:#E65100;font-weight:600">💰 ~${parseFloat(s.value).toLocaleString()} ฿</div>` : ""}
+              <div style="color:var(--text3);margin-top:4px">${s.date||""} · ${s.incharge||""}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+// ===== SCRAP FORM =====
+function openScrapForm() {
+  scrapSelProd     = null;
+  _scrapImageBase64 = "";
+  document.getElementById("scrap-prod-search").value = "";
+  document.getElementById("scrap-selected-prod").style.display = "none";
+  document.getElementById("scrap-prod-dropdown").style.display = "none";
+  ["scrap-amount","scrap-unit","scrap-location","scrap-note"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  const urlEl = document.getElementById("scrap-image-url");
+  if (urlEl) urlEl.value = "";
+  const urlSec = document.getElementById("scrap-url-section");
+  if (urlSec) urlSec.style.display = "none";
+  const urlBtn = document.getElementById("scrap-url-btn");
+  if (urlBtn) { urlBtn.style.borderColor="var(--border2)"; urlBtn.style.color="var(--text2)"; urlBtn.style.background="#fff"; }
+  document.getElementById("scrap-value").value = "0";
+  document.getElementById("scrap-condition").value = "ใช้ได้";
+  document.getElementById("scrap-img-preview").style.display = "none";
+
+  // populate job select
+  const jSel = document.getElementById("scrap-job");
+  jSel.innerHTML = '<option value="">— เลือก Job —</option>';
+  JOBS.forEach(j => {
+    const o = document.createElement("option");
+    o.value = j.id; o.textContent = j.name;
+    jSel.appendChild(o);
+  });
+
+  openModal("add-scrap");
+  setTimeout(() => document.getElementById("scrap-prod-search").focus(), 100);
+}
+
+function onScrapProdSearch() {
+  const q  = document.getElementById("scrap-prod-search").value;
+  const dd = document.getElementById("scrap-prod-dropdown");
+  const res = PRODUCTS.filter(p => {
+    const lq = q.toLowerCase();
+    return p.name.toLowerCase().includes(lq) || p.brand.toLowerCase().includes(lq) || p.category.toLowerCase().includes(lq);
+  }).slice(0, 10);
+  if (!res.length || !q) { dd.style.display="none"; return; }
+  dd.innerHTML = res.map(p => `
+    <div class="dd-item" onclick="selectScrapProd('${p.id}')">
+      ${p.imageURL ? `<img src="${p.imageURL}" class="dd-thumb" onerror="this.style.display='none'">` : `<div class="dd-thumb-ph"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text3);fill:none;stroke-width:1.5"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg></div>`}
+      <div>
+        <div class="dd-name">${p.name}</div>
+        <div class="dd-sub">${p.category}${p.brand?" · "+p.brand:""}</div>
+      </div>
+    </div>`).join("");
+  dd.style.display = "block";
+}
+
+function selectScrapProd(id) {
+  scrapSelProd = PRODUCTS.find(p => p.id === id);
+  document.getElementById("scrap-prod-search").value = scrapSelProd.name;
+  document.getElementById("scrap-prod-dropdown").style.display = "none";
+  // show selected product
+  const box = document.getElementById("scrap-selected-prod");
+  box.style.display = "flex";
+  const img = document.getElementById("scrap-prod-img");
+  img.src = scrapSelProd.imageURL || "";
+  img.style.display = scrapSelProd.imageURL ? "block" : "none";
+  document.getElementById("scrap-prod-name").textContent = scrapSelProd.name;
+  document.getElementById("scrap-prod-cat").textContent  = [scrapSelProd.brand, scrapSelProd.category].filter(Boolean).join(" · ");
+  // auto-fill unit
+  if (!document.getElementById("scrap-unit").value) {
+    document.getElementById("scrap-unit").value = scrapSelProd.baseUnit || scrapSelProd.issueUnit || scrapSelProd.unit || "";
+  }
+  // auto-estimate value from costPrice
+  if (scrapSelProd.costPrice && document.getElementById("scrap-value").value === "0") {
+    document.getElementById("scrap-value").value = "";
+    document.getElementById("scrap-value").placeholder = `ราคาทุน ${scrapSelProd.costPrice} ฿/${scrapSelProd.unit}`;
+  }
+}
+
+function previewScrapImage() {
+  const url  = document.getElementById("scrap-image-url")?.value.trim();
+  const prev = document.getElementById("scrap-img-preview");
+  const img  = document.getElementById("scrap-img-preview-el");
+  const stat = document.getElementById("scrap-img-status");
+  if (url) {
+    img.src     = url;
+    img.onerror = () => { prev.style.display="none"; };
+    img.onload  = () => { prev.style.display="block"; if(stat) stat.textContent="URL รูปภาพ"; };
+  } else {
+    if (!img.src || img.src.startsWith("data:") === false) prev.style.display="none";
+  }
+}
+
+function toggleScrapUrlInput() {
+  const sec = document.getElementById("scrap-url-section");
+  const btn = document.getElementById("scrap-url-btn");
+  const isOpen = sec.style.display !== "none";
+  sec.style.display = isOpen ? "none" : "block";
+  btn.style.borderColor  = isOpen ? "var(--border2)" : "var(--blue)";
+  btn.style.color        = isOpen ? "var(--text2)"   : "var(--blue)";
+  btn.style.background   = isOpen ? "#fff"            : "var(--blue-lt)";
+  if (!isOpen) setTimeout(() => document.getElementById("scrap-image-url")?.focus(), 100);
+}
+
+let _scrapImageBase64 = "";   // เก็บ base64 ของรูปที่ถ่าย/เลือก
+
+// ===== CAMERA & GALLERY — สร้าง input ใหม่ทุกครั้งเพื่อหลีกเลี่ยงปัญหา mobile =====
+function openCamera() {
+  const inp = document.createElement("input");
+  inp.type    = "file";
+  inp.accept  = "image/*";
+  inp.capture = "environment"; // กล้องหลัง
+  inp.style.display = "none";
+  inp.onchange = () => { handleScrapPhoto(inp); document.body.removeChild(inp); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+function openGallery() {
+  const inp = document.createElement("input");
+  inp.type   = "file";
+  inp.accept = "image/*";
+  // ไม่ใส่ capture → เปิด Gallery / file picker ได้เต็มที่
+  inp.style.display = "none";
+  inp.onchange = () => { handleScrapPhoto(inp); document.body.removeChild(inp); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+function handleScrapPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const status = document.getElementById("scrap-img-status");
+  if (status) status.textContent = "กำลังประมวลผลรูป...";
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+
+    // compress ถ้าใหญ่เกิน 800KB
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const MAX    = 1200; // px
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX/w); w = MAX; }
+        else       { w = Math.round(w * MAX/h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/jpeg", 0.78);
+      _scrapImageBase64 = compressed;
+
+      // preview
+      const prevEl = document.getElementById("scrap-img-preview");
+      const imgEl  = document.getElementById("scrap-img-preview-el");
+      imgEl.src = compressed;
+      prevEl.style.display = "block";
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      if (status) status.textContent = `📷 ${file.name} · ${kb} KB · ${w}×${h}px`;
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+  input.value = ""; // reset เพื่อให้เลือกรูปเดิมซ้ำได้
+}
+
+function clearScrapImage() {
+  _scrapImageBase64 = "";
+  const prev = document.getElementById("scrap-img-preview");
+  const img  = document.getElementById("scrap-img-preview-el");
+  const stat = document.getElementById("scrap-img-status");
+  img.src = ""; prev.style.display = "none";
+  if (stat) stat.textContent = "";
+  const urlInput = document.getElementById("scrap-image-url");
+  if (urlInput) urlInput.value = "";
+}
+
+async function saveScrap() {
+  const jobSel   = document.getElementById("scrap-job");
+  const jobId    = jobSel.value;
+  const jobName  = jobId ? (jobSel.options[jobSel.selectedIndex]?.text || "") : "";
+  const amount   = document.getElementById("scrap-amount").value.trim();
+  const unit     = document.getElementById("scrap-unit").value.trim();
+  const location = document.getElementById("scrap-location").value.trim();
+  const condition= document.getElementById("scrap-condition").value;
+  const value    = parseFloat(document.getElementById("scrap-value").value) || 0;
+  const note     = document.getElementById("scrap-note").value.trim();
+  const urlInput = document.getElementById("scrap-image-url")?.value.trim() || "";
+  const incharge = currentUser || "-";
+  const date     = new Date().toLocaleDateString("th-TH", { year:"numeric", month:"long", day:"numeric" });
+
+  if (!jobId) { toast("กรุณาเลือก Job/Site", "error"); return; }
+
+  // รูปภาพ: ถ้ามี base64 ให้ใช้ก่อน ถ้าไม่มีใช้ URL
+  let imageUrl = urlInput;
+  let imageBase64 = _scrapImageBase64 || "";
+
+  const scrapData = {
+    scrapId:     "SC" + Date.now(),
+    productId:   scrapSelProd?.id    || "",
+    productName: scrapSelProd?.name  || (document.getElementById("scrap-prod-search")?.value || "ไม่ระบุ"),
+    jobId, jobName, amount, unit, location, condition, value, note,
+    imageUrl,      // URL สำหรับแสดงผล
+    imageBase64,   // base64 สำหรับบันทึกลง Drive/Sheet (ถ้ามี)
+    incharge, date
+  };
+
+  // เพิ่มใน local cache ทันที (ใช้ base64 preview ถ้ามี)
+  const localEntry = { ...scrapData, imageUrl: imageBase64 || imageUrl };
+  SCRAPS.unshift(localEntry);
+  renderScrapList();
+  closeModal("add-scrap");
+  _scrapImageBase64 = "";
+  toast(`บันทึกเศษ "${scrapData.productName}" สำเร็จ`, "success");
+
+  // บันทึกลง Sheet ใน background (ส่งเฉพาะ URL ถ้าไม่มี base64)
+  try {
+    const sendData = { ...scrapData };
+    // ถ้ามี base64 ให้ส่ง แต่ถ้าใหญ่เกิน 50KB ให้ตัดออก (Apps Script URL limit)
+    if (imageBase64 && imageBase64.length > 50000) {
+      delete sendData.imageBase64; // ใหญ่เกินส่งผ่าน GET ไม่ได้
+    }
+    const payload = encodeURIComponent(JSON.stringify(sendData));
+    await fetch(APPS_SCRIPT_URL + "?action=saveScrap&data=" + payload, { redirect:"follow" });
+  } catch(e) {}
+}
+
+// close scrap product dropdown
+document.addEventListener("click", e => {
+  if (!e.target.closest("#scrap-prod-search") && !e.target.closest("#scrap-prod-dropdown")) {
+    const dd = document.getElementById("scrap-prod-dropdown");
+    if (dd) dd.style.display = "none";
+  }
+});
+
+function toast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = (type === "error" ? "⚠ " : "✓ ") + msg;
+  el.style.background = type === "error" ? "var(--red)" : "var(--green)";
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+// ===== CLOSE DROPDOWNS =====
+document.addEventListener("click", e => {
+  ["issue","return","receive","sale"].forEach(mode => {
+    if (!e.target.closest(`#${mode}-search`) && !e.target.closest(`#${mode}-dropdown`))
+      document.getElementById(mode + "-dropdown").style.display = "none";
+  });
+});
+
+// ===== DATE HELPERS =====
+function toThaiDate(isoStr) {
+  if (!isoStr) return "";
+  const d = new Date(isoStr + "T00:00:00");
+  return d.toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function setDateDisplay(mode, isoStr) {
+  const el = document.getElementById(mode + "-date");
+  if (el) el.textContent = toThaiDate(isoStr);
+}
+
+function onDateChange(mode) {
+  const raw = document.getElementById(mode + "-date-raw");
+  if (raw) setDateDisplay(mode, raw.value);
+}
+
+
+
+// Expose functions to window for Apps Script iframe compatibility
+if (typeof switchTab !== "undefined") window.switchTab = switchTab;
+if (typeof onJobChange !== "undefined") window.onJobChange = onJobChange;
+if (typeof onSearch !== "undefined") window.onSearch = onSearch;
+if (typeof selectProd !== "undefined") window.selectProd = selectProd;
+if (typeof addToCart !== "undefined") window.addToCart = addToCart;
+if (typeof removeFromCart !== "undefined") window.removeFromCart = removeFromCart;
+if (typeof submitTransaction !== "undefined") window.submitTransaction = submitTransaction;
+if (typeof submitSimple !== "undefined") window.submitSimple = submitSimple;
+if (typeof loadHistory !== "undefined") window.loadHistory = loadHistory;
+if (typeof loadSummary !== "undefined") window.loadSummary = loadSummary;
+if (typeof loadStock !== "undefined") window.loadStock = loadStock;
+if (typeof refreshStockFromSheet !== "undefined") window.refreshStockFromSheet = refreshStockFromSheet;
+if (typeof renderStock !== "undefined") window.renderStock = renderStock;
+if (typeof exportExcel !== "undefined") window.exportExcel = exportExcel;
+if (typeof exportCSV !== "undefined") window.exportCSV = exportCSV;
+if (typeof exportOrderExcel !== "undefined") window.exportOrderExcel = exportOrderExcel;
+if (typeof printStockReport !== "undefined") window.printStockReport = printStockReport;
+if (typeof printFromHistory !== "undefined") window.printFromHistory = printFromHistory;
+if (typeof printTransaction !== "undefined") window.printTransaction = printTransaction;
+if (typeof toggleOrder !== "undefined") window.toggleOrder = toggleOrder;
+if (typeof openAddJob !== "undefined") window.openAddJob = openAddJob;
+if (typeof saveNewJob !== "undefined") window.saveNewJob = saveNewJob;
+if (typeof closeModal !== "undefined") window.closeModal = closeModal;
+if (typeof openAddProduct !== "undefined") window.openAddProduct = openAddProduct;
+if (typeof saveNewProduct !== "undefined") window.saveNewProduct = saveNewProduct;
+if (typeof openScrapForm !== "undefined") window.openScrapForm = openScrapForm;
+if (typeof onScrapProdSearch !== "undefined") window.onScrapProdSearch = onScrapProdSearch;
+if (typeof selectScrapProd !== "undefined") window.selectScrapProd = selectScrapProd;
+if (typeof renderScrapList !== "undefined") window.renderScrapList = renderScrapList;
+if (typeof loadScrap !== "undefined") window.loadScrap = loadScrap;
+if (typeof saveScrap !== "undefined") window.saveScrap = saveScrap;
+if (typeof openCamera !== "undefined") window.openCamera = openCamera;
+if (typeof openGallery !== "undefined") window.openGallery = openGallery;
+if (typeof toggleScrapUrlInput !== "undefined") window.toggleScrapUrlInput = toggleScrapUrlInput;
+if (typeof clearScrapImage !== "undefined") window.clearScrapImage = clearScrapImage;
+if (typeof previewScrapImage !== "undefined") window.previewScrapImage = previewScrapImage;
+if (typeof updateQtyPreview !== "undefined") window.updateQtyPreview = updateQtyPreview;
+if (typeof doLogin !== "undefined") window.doLogin = doLogin;
+if (typeof doLogout !== "undefined") window.doLogout = doLogout;
+if (typeof togglePw !== "undefined") window.togglePw = togglePw;
+
+// ===== BIND ALL EVENT HANDLERS =====
+function bindEvents() {
+  var loginBtn = document.getElementById("login-btn");
+  if (loginBtn) loginBtn.onclick = function() { doLogin(); };
+
+  var loginPw = document.getElementById("login-pw");
+  if (loginPw) loginPw.onkeydown = function(e) {
+    if (e.key === "Enter") doLogin();
+  };
+
+  var logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) logoutBtn.onclick = function() { doLogout(); };
+
+  var pwToggle = document.getElementById("pw-toggle-btn");
+  if (pwToggle) pwToggle.onclick = function() { togglePw(); };
+}
+
+// ===== STARTUP =====
+// ใช้ setTimeout แทน window.onload เพราะ print functions override window.onload
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(function() { bindEvents(); init(); }, 500);
+  });
+} else {
+  setTimeout(function() { bindEvents(); init(); }, 500);
+}
+</script>
+</body>
+</html>

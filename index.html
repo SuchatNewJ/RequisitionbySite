@@ -1246,7 +1246,9 @@ function initAfterLogin() {
       const el = document.getElementById(id);
       if (el && typeof flatpickr !== "undefined") {
         flatpickr("#" + id, {
-          locale: "th",
+          locale: {
+          firstDayOfWeek: 0
+          },
           dateFormat: "d F Y",
           defaultDate: "today",
           allowInput: false,

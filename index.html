@@ -1344,7 +1344,7 @@ function searchProds(q) {
     p.name.toLowerCase().includes(lq) ||
     p.brand.toLowerCase().includes(lq) ||
     p.category.toLowerCase().includes(lq) ||
-    (p.size || "").toLowerCase().includes(lq)
+    String(p.size || "").toLowerCase().includes(lq)
   ).slice(0, 14);
 }
 
@@ -1944,7 +1944,7 @@ function renderStock() {
 
   let list = PRODUCTS.filter(p => {
     if (cat && p.category !== cat) return false;
-    if (q && !p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q) && !(p.size||"").toLowerCase().includes(q)) return false;
+    if (q && !String(p.name||"").toLowerCase().includes(q) && !String(p.brand||"").toLowerCase().includes(q) && !String(p.size||"").toLowerCase().includes(q)) return false;
     if (filter === "low")  return p.qty > 0 && p.qty <= 5;
     if (filter === "out")  return p.qty <= 0;
     if (filter === "ok")   return p.qty > 5;

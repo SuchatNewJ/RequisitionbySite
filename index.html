@@ -443,9 +443,12 @@ tr:active td{background:var(--gray)}
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           PDF
         </button>
-        <button class="btn btn-primary" id="issue-submit-btn" onclick="submitTransaction('issue')">
+        <button class="btn" style="background:#e6a23c;color:#fff;border-color:#e6a23c" onclick="submitTransaction('issue', 'pending')">
+          📋 ออกใบขอเบิก / จองของ
+        </button>
+        <button class="btn btn-primary" id="issue-submit-btn" onclick="submitTransaction('issue', 'completed')">
           <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg>
-          ยืนยันการเบิก
+          ยืนยันการเบิก (ตัดสต็อก)
         </button>
       </div>
     </div>
@@ -1557,23 +1560,27 @@ async function submitTransaction(mode) {
   const job   = JOBS.find(j => j.id === jid);
   const today = document.getElementById(mode + "-date").value || toThaiDate(new Date().toISOString().split("T")[0]);
   const btn   = document.getElementById(mode + "-submit-btn");
-  const label = mode === "issue" ? "การเบิก" : "การคืน";
+  const label = mode === "issue" ? (status === "pending" ? "การออกใบขอเบิก" : "การเบิก") : "การคืน";
 
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> กำลังบันทึก...`;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> กำลังบันทึก...`;
+  }
 
   const payload = {
     action: "saveTransaction",
     data: {
-      type: mode, jobId: jid, jobName: job ? job.name : jid,
-      incharge, remark, date: today, updateQty: true,
-      items: cart.map(it => ({
-        productId: it.prod.id, productName: it.prod.name,
-        qty: it.qty, unit: it.unit, note: it.note || "",
-      }))
+      type: mode,
+      status: status, // <-- เพิ่มการส่ง status ('pending' หรือ 'completed')
+      jobId: jid,
+      jobName: job ? job.name : jid,
+      date: today,
+      incharge: incharge,
+      remark: remark,
+      items: cart
     }
   };
-
+  
   try {
     const result = await apiPost(payload);
 
@@ -1697,19 +1704,38 @@ async function loadHistory() {
       const typeLabel = { issue:"เบิก", return:"คืน", receive:"รับเข้า", sale:"ขายออก" }[t.type] || t.type;
       const badgeCls  = { issue:"badge-issue", return:"badge-return", receive:"badge-receive", sale:"badge-sale" }[t.type] || "badge-issue";
       const tJson     = encodeURIComponent(JSON.stringify(t));
+
+      // --- เช็กสถานะ pending / completed ---
+      const isPending = t.status === "pending";
+      const statusBadge = isPending 
+        ? `<span class="badge" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;margin-left:4px">⏳ รอจ่ายของ</span>`
+        : `<span class="badge" style="background:#d4edda;color:#155724;border:1px solid #c3e6cb;margin-left:4px">✓ จ่ายแล้ว</span>`;
+
+      // ปุ่มยืนยันจ่ายของ (จะแสดงเฉพาะรายการที่เป็น pending และเป็นประเภทเบิก/ขาย)
+      const approveBtn = isPending ? `
+        <button class="btn btn-sm" onclick="approveTransaction('${t.transId || t.id}')"
+          style="background:#28a745;color:#fff;border-color:#28a745;flex-shrink:0;gap:5px;padding:7px 12px;margin-right:6px">
+          📦 ยืนยันจ่ายของ (ตัดสต็อก)
+        </button>
+      ` : "";
+
       return `
-      <div class="hist-card">
+      <div class="hist-card" style="${isPending ? 'border-left: 4px solid #ffc107;' : ''}">
         <div class="hist-header">
           <div style="flex:1;min-width:0">
             <span class="badge ${badgeCls}">${typeLabel}</span>
+            ${statusBadge}
             <span class="hist-job" style="margin-left:6px">${t.jobName}</span>
             <div class="hist-meta" style="text-align:left;margin-top:4px">${t.date} · ${t.incharge}</div>
           </div>
-          <button class="btn btn-sm" onclick="printFromHistory('${tJson}')"
-            style="background:#555;color:#fff;border-color:#555;flex-shrink:0;gap:5px;padding:7px 12px">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            พิมพ์ PDF
-          </button>
+          <div style="display:flex;align-items:center;flex-shrink:0">
+            ${approveBtn}
+            <button class="btn btn-sm" onclick="printFromHistory('${tJson}')"
+              style="background:#555;color:#fff;border-color:#555;flex-shrink:0;gap:5px;padding:7px 12px">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              พิมพ์ PDF
+            </button>
+          </div>
         </div>
         <div class="hist-items">
           ${(t.items || []).map(it => `<span class="hist-item-pill">${it.productName} <strong>${it.qty} ${it.unit}</strong></span>`).join("")}
@@ -1717,6 +1743,7 @@ async function loadHistory() {
         ${t.remark ? `<div style="font-size:11px;color:var(--text3);margin-top:6px">${t.remark}</div>` : ""}
       </div>`;
     }).join("");
+    
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่ได้: ${err.message}</div>`;
   }
@@ -3076,6 +3103,32 @@ if (document.readyState === "loading") {
   });
 } else {
   setTimeout(function() { bindEvents(); init(); }, 50);
+}
+
+  // ===== ฟังก์ชันกดจ่ายของ / ยืนยันตัดสต็อกจากหน้าประวัติ =====
+async function approveTransaction(transId) {
+  if (!transId) {
+    toast("ไม่พบรหัสรายการ (TransID)", "error");
+    return;
+  }
+
+  if (!confirm("คุณต้องการยืนยันการจ่ายสินค้า และทำการตัดสต็อกจริงใช่หรือไม่?")) return;
+
+  try {
+    toast("กำลังบันทึกจ่ายของ...", "info");
+    const res = await apiFetch("approveTransaction", { transId });
+
+    if (res && res.success) {
+      toast("จ่ายสินค้าและตัดสต็อกเรียบร้อยแล้ว!", "success");
+      // โหลดข้อมูลประวัติและสต็อกใหม่
+      if (typeof loadHistory === "function") loadHistory();
+      if (typeof loadStock === "function") loadStock();
+    } else {
+      toast("เกิดข้อผิดพลาด: " + (res.message || "ไม่สามารถทำรายการได้"), "error");
+    }
+  } catch (err) {
+    toast("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message, "error");
+  }
 }
 </script>
 </body>

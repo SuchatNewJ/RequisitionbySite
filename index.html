@@ -1691,7 +1691,7 @@ async function loadHistory() {
       return;
     }
 
-    el.innerHTML = list.map(t => {
+  el.innerHTML = list.slice().reverse().map(t => {
       const typeLabel = { issue:"เบิก", return:"คืน", receive:"รับเข้า", sale:"ขายออก" }[t.type] || t.type;
       const badgeCls  = { issue:"badge-issue", return:"badge-return", receive:"badge-receive", sale:"badge-sale" }[t.type] || "badge-issue";
       const tJson     = encodeURIComponent(JSON.stringify(t));

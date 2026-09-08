@@ -1487,14 +1487,25 @@ function getCart(mode) {
 }
 
 function addToCart(mode) {
-  const p    = selProd[mode];
+  const p = selProd[mode];
   if (!p) return;
   const qty   = parseFloat(document.getElementById(mode + "-qty").value) || 1;
   const unit  = document.getElementById(mode + "-unit").value;
   const note  = document.getElementById(mode + "-note").value;
   const cost  = mode === "receive" ? (parseFloat(document.getElementById("receive-cost").value) || 0) : 0;
-  const price = mode === "sale"    ? (parseFloat(document.getElementById("sale-price").value)   || 0) : 0;
-  getCart(mode).push({ prod: p, qty, unit, note, cost, price });
+  const price = mode === "sale"    ? (parseFloat(document.getElementById("sale-price").value)  || 0) : 0;
+
+  // 💡 ดึง id และ name จาก p ออกมาตรงๆ เพื่อให้ Backend อ่านค่าง่าย
+  getCart(mode).push({
+    productId: p.id || p.product_Id || "",
+    productName: p.name || p.product_Name || "",
+    qty,
+    unit,
+    note,
+    cost,
+    price
+  });
+
   selProd[mode] = null;
   document.getElementById(mode + "-sel-box").style.display = "none";
   renderCart(mode);
@@ -1531,9 +1542,13 @@ function renderCart(mode) {
     const amt = mode === "receive" ? it.cost * it.qty : mode === "sale" ? it.price * it.qty : 0;
     return `
     <div class="cart-item">
-      ${thumb(it.prod.imageURL, "cart-thumb")}
+    // ✅ แก้ใหม่บรรทัด 1545 (ดักจับภาพ)
+    // ${thumb(it.prod.imageURL, "cart-thumb")}
+      ${thumb((it.prod ? it.prod.imageURL : it.imageURL) || "", "cart-thumb")}
       <div style="flex:1;min-width:0">
-        <div class="cart-name">${it.prod.name}</div>
+    // ✅ แก้ใหม่บรรทัด 1549 (ดักจับชื่อสินค้า)
+    // <div class="cart-name">${it.prod.name}</div>
+        <div class="cart-name">${it.productName || (it.prod ? it.prod.name : "")}</div>
         ${it.note ? `<div class="cart-note">${it.note}</div>` : ""}
       </div>
       ${mode === "receive" && it.cost ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.cost.toLocaleString()} ฿/หน่วย<br><strong>${amt.toLocaleString()} ฿</strong></div>` : ""}
@@ -1550,11 +1565,12 @@ function renderCart(mode) {
 }
 
 // ===== SUBMIT issue/return =====
-async function submitTransaction(mode) {
-  const jid      = document.getElementById(mode + "-job").value;
-  const cart     = getCart(mode);
-  const incharge = document.getElementById(mode + "-incharge").value || currentUser || "-";
-  const remark   = mode === "issue" ? (document.getElementById("issue-remark").value || "") : "";
+// 💡 แก้บรรทัด 1564 ให้รับ status เพิ่มเข้ามา (default เป็น 'completed')
+async function submitTransaction(mode, status = "completed") {
+  const jid       = document.getElementById(mode + "-job").value;
+  const cart      = getCart(mode);
+  const incharge  = document.getElementById(mode + "-incharge").value || currentUser || "-";
+  const remark    = mode === "issue" ? (document.getElementById("issue-remark").value || "") : "";
 
   if (!jid)         { toast("กรุณาเลือก Job", "error"); return; }
   if (!cart.length) { toast("กรุณาเพิ่มอุปกรณ์อย่างน้อย 1 รายการ", "error"); return; }
@@ -1562,7 +1578,9 @@ async function submitTransaction(mode) {
   const job   = JOBS.find(j => j.id === jid);
   const today = document.getElementById(mode + "-date").value || toThaiDate(new Date().toISOString().split("T")[0]);
   const btn   = document.getElementById(mode + "-submit-btn");
-  const label = mode === "issue" ? (status === "pending" ? "การออกใบขอเบิก" : "การเบิก") : "การคืน";
+  
+  // 💡 ปรับการแสดงข้อความบนปุ่ม
+  const label = mode === "issue" ? (status === "pending" ? "การจองอุปกรณ์" : "การเบิก") : "การคืน";
 
   if (btn) {
     btn.disabled = true;
@@ -1573,7 +1591,7 @@ async function submitTransaction(mode) {
     action: "saveTransaction",
     data: {
       type: mode,
-      status: status, // <-- เพิ่มการส่ง status ('pending' หรือ 'completed')
+      status: status, // 💡 ได้รับค่า 'pending' หรือ 'completed' มาใช้อย่างถูกต้องแล้ว
       jobId: jid,
       jobName: job ? job.name : jid,
       date: today,
@@ -1582,13 +1600,13 @@ async function submitTransaction(mode) {
       items: cart
     }
   };
-  
+
   try {
     const result = await apiPost(payload);
-
     if (result.success) {
       if (mode === "issue") { issueCarts = []; document.getElementById("issue-remark").value = ""; }
-      else                  { returnCart = []; }
+      else { returnCart = []; }
+      
       renderCart(mode);
       toast(`บันทึก${label}สำเร็จ · ${cart.length} รายการ (${result.tranId})`, "success");
     } else {
@@ -1596,12 +1614,14 @@ async function submitTransaction(mode) {
     }
   } catch (err) {
     toast("เชื่อมต่อไม่ได้: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `บันทึก${label}`;
+    }
   }
-
-  btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg> ยืนยัน${label}`;
 }
-
+  
 // ===== SUBMIT receive/sale =====
 async function submitSimple(mode) {
   const cart     = getCart(mode);

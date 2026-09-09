@@ -1727,15 +1727,17 @@ async function loadHistory() {
       const tJson     = encodeURIComponent(JSON.stringify(t));
 
       // --- เช็กสถานะ pending / completed ---
-      const isPending = t.status === "pending";
-      const statusBadge = isPending 
-        ? `<span class="badge" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;margin-left:4px">⏳ รอจ่ายของ</span>`
-        : `<span class="badge" style="background:#d4edda;color:#155724;border:1px solid #c3e6cb;margin-left:4px">✓ จ่ายแล้ว</span>`;
-
-      // ปุ่มยืนยันจ่ายของ (จะแสดงเฉพาะรายการที่เป็น pending และเป็นประเภทเบิก/ขาย)
+      // ✅ โค้ดใหม่ (บรรทัด 1730):
+      const currentStatus = String(t.status || t.Status || "").trim().toLowerCase();
+      const isPending = currentStatus === "pending" || currentStatus === "รอจ่ายของ";
+      
+      const statusBadge = isPending
+        ? `<span class="badge" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;margin-left:4px;">⏳ รอจ่ายของ</span>`
+        : `<span class="badge" style="background:#d4edda;color:#155724;border:1px solid #c3e6cb;margin-left:4px;">✓ จ่ายแล้ว</span>`;
+      
       const approveBtn = isPending ? `
-        <button class="btn btn-sm" onclick="approveTransaction('${t.transId || t.id}')"
-          style="background:#28a745;color:#fff;border-color:#28a745;flex-shrink:0;gap:5px;padding:7px 12px;margin-right:6px">
+        <button class="btn btn-sm" onclick="handleApproveTransaction('${t.transId || t.tran_Id}')"
+          style="background:#28a745;color:#fff;border-color:#28a745;flex-shrink:0;gap:5px;padding:7px 12px;margin-right:6px;">
           📦 ยืนยันจ่ายของ (ตัดสต็อก)
         </button>
       ` : "";
@@ -1769,7 +1771,37 @@ async function loadHistory() {
     el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่ได้: ${err.message}</div>`;
   }
 }
+  
+// ===== HANDLE APPROVE TRANSACTION =====
+async function handleApproveTransaction(transId) {
+  if (!transId) {
+    alert("ไม่พบรหัสรายการ (transId)");
+    return;
+  }
 
+  if (!confirm(`ยืนยันการจ่ายของและตัดสต็อกจริงสำหรับรายการ ${transId} ใช่หรือไม่?`)) {
+    return;
+  }
+
+  try {
+    // แสดง loading หรือปิดปุ่มชั่วคราวเพื่อป้องกันกดซ้ำ
+    const res = await apiFetch("approveTransaction", { transId: transId });
+
+    if (res && res.success) {
+      alert("ตัดสต็อกและอัปเดตสถานะเรียบร้อยแล้ว!");
+      // รีโหลดข้อมูลประวัติใหม่เพื่อให้หน้าจออัปเดตเป็นสถานะจ่ายแล้วทันที
+      if (typeof loadHistory === "function") {
+        loadHistory();
+      }
+    } else {
+      alert("เกิดข้อผิดพลาด: " + (res.message || "ไม่สามารถตัดสต็อกได้"));
+    }
+  } catch (err) {
+    console.error("Error in handleApproveTransaction:", err);
+    alert("เกิดข้อผิดพลาดขณะส่งข้อมูล: " + err.message);
+  }
+}
+  
 // ===== SUMMARY =====
 function loadSummary() {
   const el = document.getElementById("summary-container");

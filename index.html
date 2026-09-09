@@ -1497,14 +1497,16 @@ function addToCart(mode) {
 
   // 💡 ดึง id และ name จาก p ออกมาตรงๆ เพื่อให้ Backend อ่านค่าง่าย
   getCart(mode).push({
-    productId: p.id || p.product_Id || "",
-    productName: p.name || p.product_Name || "",
-    qty,
-    unit,
-    note,
-    cost,
-    price
-  });
+  prod: p,                                       // 👈 บรรทัดนี้สำคัญมาก! ห้ามลืม
+  productId: p.id || p.product_Id || "",
+  productName: p.name || p.product_Name || "",
+  imageURL: p.imageURL || p.image_Url || "",     // 👈 เพิ่มบรรทัดนี้เพื่อเก็บรูป
+  qty,
+  unit,
+  note,
+  cost,
+  price
+});
 
   selProd[mode] = null;
   document.getElementById(mode + "-sel-box").style.display = "none";
@@ -1538,7 +1540,7 @@ function renderCart(mode) {
 
   el.innerHTML = cart.map((it, i) => {
     // 💡 ใช้ ?. ป้องกัน Crash ถ้ารายการนั้นไม่มี it.prod
-    const imgUrl = it.imageURL || it.prod?.imageURL || "";
+    const imgUrl = it.imageURL || it.prod?.imageURL || it.prod?.image_Url || "";
     const pName  = it.productName || it.prod?.name || "ไม่ระบุชื่อ";
 
     return `

@@ -1520,46 +1520,43 @@ function renderCart(mode) {
   const cart = getCart(mode);
   const el   = document.getElementById(mode + "-cart");
   const cnt  = document.getElementById(mode + "-cart-count");
-  cnt.textContent = cart.length + " รายการ";
+  if (cnt) cnt.textContent = cart.length + " รายการ";
 
   if (!cart.length) {
     el.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
-      ยังไม่มีรายการ
+      ยังไม่มีรายการ — ค้นหาและเพิ่มอุปกรณ์
     </div>`;
     return;
   }
 
-  // คำนวณยอดรวมสำหรับ receive/sale
   const totalAmt = (mode === "receive" || mode === "sale")
-    ? cart.reduce((s, it) => s + it.qty * (mode === "receive" ? it.cost : it.price), 0)
+    ? cart.reduce((s, it) => s + (it.qty * (mode === "receive" ? (it.cost || 0) : (it.price || 0))), 0)
     : 0;
 
-  const qtyColor = mode === "receive" ? "#1565C0" : mode === "sale" ? "#E65100"
-                 : mode === "issue"   ? "var(--red)" : "var(--green)";
+  const qtyColor = mode === "receive" ? "#1565C0" : mode === "sale" ? "#E65100" : mode === "issue" ? "var(--red)" : "var(--green)";
 
   el.innerHTML = cart.map((it, i) => {
-    const amt = mode === "receive" ? it.cost * it.qty : mode === "sale" ? it.price * it.qty : 0;
+    // 💡 ใช้ ?. ป้องกัน Crash ถ้ารายการนั้นไม่มี it.prod
+    const imgUrl = it.imageURL || it.prod?.imageURL || "";
+    const pName  = it.productName || it.prod?.name || "ไม่ระบุชื่อ";
+
     return `
     <div class="cart-item">
-    // ✅ แก้ใหม่บรรทัด 1545 (ดักจับภาพ)
-    // ${thumb(it.prod.imageURL, "cart-thumb")}
-      ${thumb((it.prod ? it.prod.imageURL : it.imageURL) || "", "cart-thumb")}
+      ${thumb(imgUrl, "cart-thumb")}
       <div style="flex:1;min-width:0">
-    // ✅ แก้ใหม่บรรทัด 1549 (ดักจับชื่อสินค้า)
-    // <div class="cart-name">${it.prod.name}</div>
-        <div class="cart-name">${it.productName || (it.prod ? it.prod.name : "")}</div>
+        <div class="cart-name">${pName}</div>
         ${it.note ? `<div class="cart-note">${it.note}</div>` : ""}
       </div>
-      ${mode === "receive" && it.cost ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.cost.toLocaleString()} ฿/หน่วย<br><strong>${amt.toLocaleString()} ฿</strong></div>` : ""}
-      ${mode === "sale"    && it.price ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.price.toLocaleString()} ฿/หน่วย<br><strong>${amt.toLocaleString()} ฿</strong></div>` : ""}
-      <span class="cart-qty" style="color:${qtyColor}">${it.qty} ${it.unit}</span>
+      ${mode === "receive" && it.cost ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.cost}</div>` : ""}
+      ${mode === "sale" && it.price ? `<div style="font-size:11px;color:var(--text2);text-align:right;margin-right:4px">${it.price}</div>` : ""}
+      <span class="cart-qty" style="color:${qtyColor}">${it.qty} ${it.unit || ""}</span>
       <button class="btn-icon" onclick="removeFromCart('${mode}',${i})" title="ลบ">
-        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
       </button>
     </div>`;
   }).join("") + (totalAmt > 0 ? `
-    <div style="text-align:right;padding:10px 4px 4px;font-size:14px;font-weight:600;border-top:0.5px solid var(--border);margin-top:4px">
+    <div style="text-align:right;padding:10px 4px 4px;font-size:14px;font-weight:600;border-top:0.5px solid var(--border);margin-top:6px">
       ยอดรวม: <span style="color:${qtyColor}">${totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2})} บาท</span>
     </div>` : "");
 }

@@ -1736,7 +1736,7 @@ async function loadHistory() {
         : `<span class="badge" style="background:#d4edda;color:#155724;border:1px solid #c3e6cb;margin-left:4px;">✓ จ่ายแล้ว</span>`;
       
       const approveBtn = isPending ? `
-        <button class="btn btn-sm" onclick="handleApproveTransaction('${t.transId || t.tran_Id}')"
+        <button class="btn btn-sm" onclick="handleApproveTransaction('${t.id || t.transId || t.tran_Id || ""}')"
           style="background:#28a745;color:#fff;border-color:#28a745;flex-shrink:0;gap:5px;padding:7px 12px;margin-right:6px;">
           📦 ยืนยันจ่ายของ (ตัดสต็อก)
         </button>
@@ -1774,8 +1774,8 @@ async function loadHistory() {
   
 // ===== HANDLE APPROVE TRANSACTION =====
 async function handleApproveTransaction(transId) {
-  if (!transId) {
-    alert("ไม่พบรหัสรายการ (transId)");
+  if (!transId || transId === "undefined") {
+    alert("ไม่พบรหัสรายการ (transId) — กรุณารีเฟรชหน้าประวัติแล้วลองใหม่");
     return;
   }
 

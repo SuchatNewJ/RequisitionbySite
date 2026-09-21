@@ -1308,10 +1308,13 @@ async function apiFetch(action, params = {}) {
 }
 
 async function apiPost(payload) {
-  // ส่งผ่าน GET เพราะ Apps Script doPost มีปัญหา CORS
-  const data = encodeURIComponent(JSON.stringify(payload.data));
-  const url  = APPS_SCRIPT_URL + "?action=saveTransaction&data=" + data;
-  const res  = await fetch(url, { redirect: "follow" });
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),   // { action: "saveTransaction", data: {...} }
+    redirect: "follow"
+    // ไม่ต้องใส่ headers — เบราว์เซอร์จะใส่ Content-Type: text/plain ให้อัตโนมัติ
+    // ซึ่งเป็น "simple request" ไม่ trigger CORS preflight → ใช้ได้กับ Apps Script
+  });
   return res.json();
 }
 
